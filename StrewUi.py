@@ -32,7 +32,6 @@ class MainPanel (bpy.types.Panel) :
         c.operator("strew.test", text="test")
 
 
-
 class InvokePrefsPanel(bpy.types.Operator):
     bl_idname = "strew.invokeprefspanel"
     bl_label = "InvokePrefsPanel"
