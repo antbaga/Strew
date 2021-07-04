@@ -2,7 +2,7 @@ import bpy
 import os
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
-from . import __init__, StrewManOperators, StrewBiomeManager
+from . import __init__, StrewManOperators, StrewBiomeManager, StrewEnums
 import addon_utils
 
 
@@ -26,6 +26,7 @@ class UiSwitch(bpy.types.PropertyGroup):
             ("Assets", "Assets", "The asset manager"),
             ("Biomes","Biomes", "The Biome manager")
         ],
+        default={"General"},
         options={"ENUM_FLAG"}
     )
 
@@ -41,13 +42,17 @@ class MainPanel(bpy.types.Panel):
         ui_switch = context.scene.strew_ui_switch
         l = self.layout
         r = l.row(align=True)
-        c = l.column(align=True)
+        c = r.column(align=True)
+        c.scale_x = 0.30
+        c.scale_y = 2.0
+        c.prop(ui_switch, "panels")
+        r.separator(factor=2.0)
+        c = r.column(align=True)
         #Those two ones are kept here for now since i might use them later
         #c.prop(ui_switch, "general_panel", toggle = True)
         #c.prop(ui_switch, "asset_manager", toggle = True)
-        c.prop(ui_switch, "panels")
+        #c.prop(ui_switch, "panels")
         if ui_switch.panels == {'General'}:
-            c = l.column(align=True)
             # Calls the functions here
             c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
             c.operator("strew.createpreset", text="Save as new preset")
@@ -58,14 +63,12 @@ class MainPanel(bpy.types.Panel):
             c.operator("strew.invokeprefspanel", text="open Asset Manager")
             c.operator("strew.test", text="test")
         elif ui_switch.panels == {'Assets'}:
-            c = l.column(align=True)
             c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
             c.operator("strew.createpreset", text="Save as new preset")
             c.operator("strew.importassets", text="Import All")
             c.operator("strew.addasset", text="Save as asset")
             c.operator("strew.removeasset", text="remove from asset")
         else:
-            c = l.column(align=True)
             c.operator("strew.setupstrew", text="setup strew")
             c.operator("strew.invokeprefspanel", text="open Asset Manager")
             c.operator("strew.test", text="test")
@@ -404,6 +407,10 @@ class SetupStrew(bpy.types.Operator):
         return {'FINISHED'}
 
 
+
+
+
+
 #####################################################################################
 #
 #       REGISTER TO THE REGISTRE BECAUSE IF NOT, BLENDER DON'T KNOW JOHN SNOOOOOW       
@@ -432,3 +439,4 @@ def register():
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
+    del bpy.types.Scene.strew_ui_switch

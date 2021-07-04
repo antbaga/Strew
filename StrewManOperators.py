@@ -1,6 +1,6 @@
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
-from . import __init__, StrewUi
+from . import __init__, StrewUi, StrewEnums
 import addon_utils,shutil,bpy,os,zipfile
 
 #####################################################################################
@@ -15,12 +15,16 @@ class AddPresetPopup(bpy.types.Operator):
     bl_label = "Create new preset"
 
     
-    text = bpy.props.StringProperty(name= "Enter Name", default= "New Preset")
-    desc = bpy.props.StringProperty(name= "Enter Description", default= "Custom preset")
+    def draw(self,context):
+        properties = context.scene.preset_name_string
+        l = self.layout
+        c = l.column(align=True)
+        c.prop(properties, "presetname")
+        c.prop(properties, "presetdesc")
+
     def execute(self, context):
-        name = self.text
-        desc = self.desc
-        ManagePreset.New(self, context, name, desc)
+        properties = context.scene.preset_name_string
+        ManagePreset.New(self, context, properties.presetname, properties.presetdesc)
         return {'FINISHED'}
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -28,29 +32,29 @@ class AddPresetPopup(bpy.types.Operator):
 class ClonePresetPopup(bpy.types.Operator):
     bl_idname = "strew.clonepresetpopup"
     bl_label = "Clone preset"
-    
-    
-        ### CETTE FOUTUE LIGNE MARCHE PAS. have to find another way to get StrewPresetDrop 
+
+    def draw(self, context):
+        properties = context.scene.preset_name_string
+        l = self.layout
+        c = l.column(align=True)
+        c.prop(properties, "presetname")
+        c.prop(properties, "presetdesc")
+        ##Bon, ça marche toujours pas
         #Name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
-    name = bpy.props.StringProperty(name= "Enter Name", default= "copy of preset")
-    desc = bpy.props.StringProperty(name= "Enter Description", default= "Custom preset")
     def execute(self, context):
         id = bpy.context.scene.StrewPresetDrop["StrewPresetDropdown"]
-        name = self.name
-        desc = self.desc
-        ManagePreset.Clone(self, context,id, name, desc)
+        properties = context.scene.preset_name_string
+        ManagePreset.Clone(self, context,id, properties.presetname, properties.presetdesc)
         return {'FINISHED'}
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
 class RemovePresetPopup(bpy.types.Operator):
     bl_idname = "strew.removepresetpopup"
-    bl_label = "Remove this preset"
+    bl_label = "Remove this preset?"
 
 
-    label = "delete this preset?"
     def execute(self, context):
-        
         dropid = bpy.context.scene.StrewPresetDrop["StrewPresetDropdown"]
         ManagePreset.Remove(self, context, dropid)
         return {'FINISHED'}
@@ -61,17 +65,18 @@ class RenamePresetPopup(bpy.types.Operator):
     bl_idname = "strew.renamepresetpopup"
     bl_label = "Rename preset"
     
-    
-        ### CETTE FOUTUE LIGNE MARCHE PAS. have to find another way to get StrewPresetDrop 
-    #Name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
-    name = bpy.props.StringProperty(name= "Enter New Name", default= "Custom preset")
-    desc = bpy.props.StringProperty(name= "Enter New Description", default= "Custom preset")
+    def draw(self,context):
+        properties = context.scene.preset_name_string
+        l = self.layout
+        c = l.column(align=True)
+        c.prop(properties, "presetname")
+        c.prop(properties, "presetdesc")
+
     def execute(self, context):
+        properties = context.scene.preset_name_string
         id = bpy.context.scene.StrewPresetDrop["StrewPresetDropdown"]
         oldname = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
-        name = self.name
-        desc = self.desc
-        ManagePreset.Rename(self, context,id, oldname, name, desc)
+        ManagePreset.Rename(self, context,id, oldname, properties.presetname, properties.presetdesc)
         return {'FINISHED'}
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -196,7 +201,7 @@ class ManagePreset():
         formatname = str(name).replace(" ", "_")
         formatdesc = str(desc).replace(",", ".")
         StrewFolder = StrewUi.SetupFolders.getfilepath(self, context)  
-        PresetPath = str(f'{StrewFolder}preset files\\{formatname}txt')
+        PresetPath = str(f'{StrewFolder}preset files\\{formatname}.txt')
         with open(PresetPath,'w') as PresetFile:
             PresetFile.write("")  
         EnumFormat = str(formatname)+","+str(name)+","+str(formatdesc)

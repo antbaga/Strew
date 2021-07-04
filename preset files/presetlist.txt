@@ -1,1 +1,3 @@
-Custom_preset,Custom preset,Custom preset
+Rename_preset,Rename preset,<_PropertyDeferred. <built-in function StringProperty>. {'name': 'Enter New Description'. 'default': 'Custom preset'}>
+New_Preset2,New Preset2,Custom Preseta
+New_Presetah,New Presetah,c
