@@ -173,7 +173,7 @@ class SCENE_OT_source_populate(Operator):
     def execute(self,context):
         context.scene.SMSL.collection.clear()
         preset = context.scene.StrewSourceDrop.StrewSourceDropdown
-        
+
         if preset != "This_file":
             AssetList, AssetListName = GetAssetList.Variant(self, context, preset)
             for Asset in AssetList:

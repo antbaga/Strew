@@ -2,65 +2,49 @@ import bpy
 import os
 from bpy.types import Operator, AddonPreferences, PropertyGroup, UIList, Panel
 from bpy.props import StringProperty, IntProperty, EnumProperty, PointerProperty, CollectionProperty, BoolProperty
-from . import __init__, StrewManOperators, StrewBiomeManager
+from . import __init__, StrewManOperators, StrewBiomeManager, StrewUi
 import addon_utils
 
-class Presetnamestring(bpy.types.PropertyGroup):
-    presetname: bpy.props.StringProperty(
-        name="name :",
-        default="New Preset",
-    )
-    presetdesc: bpy.props.StringProperty(
-        name="Description :",
-        default="Custom Preset",
-    )
-
-
-
-
-
+asset_list_enum = []
 # recup la liste des préset dans le fichier text
-def enumfromblenderlist(self, context):
-    enum_items = []
-    CurrentPreset = cts.StrewPresetDrop.StrewPresetDropdown
+def enumfrompreset(self, context):
+    global asset_list_enum
+    asset_list_enum = []
+    CurrentPreset = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
     StrewFolder = str(StrewUi.SetupFolders.getfilepath(self, context))
     PresetPath = f'{StrewFolder}preset files\\{CurrentPreset}.txt'
     with open(PresetPath, 'r') as SourceListFile:
         SourceList = SourceListFile.readlines()
         if SourceList is None:
             return enum_items
-        count = 0
+        count = 1
         for Source in SourceList:
             Choice = Source.split(",")
-            identifier = str(Choice[0])
-            name = str(Choice[1])
-            description = str(Choice[2])
+            identifier = str(Choice[1]).strip("\n")
+            name = str(Choice[1]).strip("\n")
+            description = str(Choice[1]).strip("\n")
             number = count
-            enum_items.append((identifier, name, description, number))
+            asset_list_enum.append((identifier, name, description))
             count += 1
-    return enum_items
+    return asset_list_enum
 
-
-# Property de la liste de dropdown
-class StrewSourceProperty(PropertyGroup):
-    StrewSourceDropdown: EnumProperty(
-        name="",
-        description="Select source",
-        # items=[]
-        items=enumfromblenderlist,
+class Presetnamestring(bpy.types.PropertyGroup):
+    presetname: bpy.props.StringProperty(
+        name="name :",
+        default="New preset",
+    )
+    presetdesc: bpy.props.StringProperty(
+        name="Description :",
+        default="Custom Preset",
+    )
+    AssetList: EnumProperty(
+        #items=[("1I","1N","1D"),("2I","2N","2D"),("3I","3N","3D")],
+        items=enum,
+        options={"ENUM_FLAG"},
+        update=printer
     )
 
 
-# Liste de dropdown
-class SRCFILES_UL_List(bpy.types.UIList):
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        custom_icon = 'OBJECT_DATAMODE'
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.label(text=item.name, icon=custom_icon)
-        elif self.layout_type in {'GRID'}:
-            layout.alignment = 'CENTER'
-            layout.label(text="", icon=User)
 
 
 

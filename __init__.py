@@ -195,8 +195,10 @@ def update_StrewPresetDrop(self, context):
     return None
 
 #recup la liste des préset dans le fichier text
+preset_list_enum = []
 def enumfromfile(self, context):
-    enum_items = []
+    global preset_list_enum
+    preset_list_enum = []
     StrewFolder = str(StrewUi.SetupFolders.getfilepath(self, context))
     PresetListPath = f"{StrewFolder}preset files\\presetlist.txt"
     with open(PresetListPath,'r') as PresetListFile:
@@ -210,9 +212,9 @@ def enumfromfile(self, context):
             name = str(Choice[1])
             description = str(Choice[2])
             number = count
-            enum_items.append((identifier,name,description,number))
+            preset_list_enum.append((identifier,name,description,number))
             count += 1
-    return enum_items
+    return preset_list_enum
 
 #Property de la liste de dropdown  
 class StrewPresetProperty(PropertyGroup):
@@ -246,8 +248,10 @@ def update_sourcedrop(self, context):
     StrewManOperators.SCENE_OT_source_populate.execute(self, context)
     return None
 #recup la liste des préset dans le fichier text
+asset_list_enumb= []
 def enumfromblenderlist(self, context):
-    enum_items = []
+    global asset_list_enumb
+    asset_list_enumb = []
     StrewFolder = str(StrewUi.SetupFolders.getfilepath(self, context))
     PresetListPath = f'{StrewFolder}preset files\\SourceFilesList.txt'
     with open(PresetListPath,'r') as SourceListFile:
@@ -261,11 +265,11 @@ def enumfromblenderlist(self, context):
             name = str(Choice[1])
             description = str(Choice[2])
             number = count
-            enum_items.append((identifier,name,description,number))
+            asset_list_enumb.append((identifier,name,description))
             count += 1
-    return enum_items
+    return asset_list_enumb
 
-#Property de la liste de dropdown  
+#Property de la liste de dropdown
 class StrewSourceProperty(PropertyGroup):
     StrewSourceDropdown : EnumProperty(
         name="",

@@ -40,12 +40,13 @@ class MainPanel(bpy.types.Panel):
 
     def draw(self, context):
         ui_switch = context.scene.strew_ui_switch
+        StrewProperty = context.scene.preset_name_string
         l = self.layout
         r = l.row(align=True)
         c = r.column(align=True)
         c.scale_x = 0.30
         c.scale_y = 2.0
-        c.prop(ui_switch, "panels")
+        c.prop(StrewProperty, "AssetList")
         r.separator(factor=2.0)
         c = r.column(align=True)
         #Those two ones are kept here for now since i might use them later

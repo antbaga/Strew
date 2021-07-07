@@ -1,2 +1,6 @@
-Rocks,Variante1
-Rocks,Variante2
+custom.blend,Cube.001
+custom.blend,Cube.002
+custom.blend,Cube.003
+custom.blend,Cube.004
+custom.blend,Cube.005
+custom.blend,Cube.006
