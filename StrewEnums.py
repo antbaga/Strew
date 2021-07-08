@@ -5,28 +5,33 @@ from bpy.props import StringProperty, IntProperty, EnumProperty, PointerProperty
 from . import __init__, StrewManOperators, StrewBiomeManager, StrewUi
 import addon_utils
 
+
 asset_list_enum = []
+OldPreset = ""
 # recup la liste des préset dans le fichier text
-def enumfrompreset(self, context):
+def enum(self, context):
     global asset_list_enum
-    asset_list_enum = []
+    global OldPreset
     CurrentPreset = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
-    StrewFolder = str(StrewUi.SetupFolders.getfilepath(self, context))
-    PresetPath = f'{StrewFolder}preset files\\{CurrentPreset}.txt'
-    with open(PresetPath, 'r') as SourceListFile:
-        SourceList = SourceListFile.readlines()
-        if SourceList is None:
-            return enum_items
-        count = 1
-        for Source in SourceList:
-            Choice = Source.split(",")
-            identifier = str(Choice[1]).strip("\n")
-            name = str(Choice[1]).strip("\n")
-            description = str(Choice[1]).strip("\n")
-            number = count
+    if CurrentPreset == OldPreset:
+        return asset_list_enum
+    else:
+        asset_list_enum.clear()
+        StrewFolder = str(StrewUi.SetupFolders.getfilepath(self, context))
+        PresetPath = f'{StrewFolder}preset files\\{CurrentPreset}.txt'
+        with open(PresetPath, 'r') as SourceListFile:
+            SourceList = SourceListFile.readlines()
+            if SourceList is None:
+                return enum_items
+        for count, source in enumerate(SourceList, 1):
+            name = source.strip("\n").split(",")[1]
+            identifier = source.strip("\n").split(",")[1]
+            description = source.strip("\n").split(",")[1]
             asset_list_enum.append((identifier, name, description))
-            count += 1
-    return asset_list_enum
+        OldPreset = CurrentPreset
+        return asset_list_enum
+
+
 
 class Presetnamestring(bpy.types.PropertyGroup):
     presetname: bpy.props.StringProperty(
@@ -41,7 +46,6 @@ class Presetnamestring(bpy.types.PropertyGroup):
         #items=[("1I","1N","1D"),("2I","2N","2D"),("3I","3N","3D")],
         items=enum,
         options={"ENUM_FLAG"},
-        update=printer
     )
 
 
