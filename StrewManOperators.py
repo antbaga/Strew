@@ -1,6 +1,6 @@
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
-from . import __init__, StrewUi, StrewEnums
+from . import __init__, StrewUi, StrewProps
 import addon_utils,shutil,bpy,os,zipfile
 
 #####################################################################################

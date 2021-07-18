@@ -13,7 +13,7 @@ import os
 import random
 from bpy.types import Operator, AddonPreferences, PropertyGroup, UIList, Panel
 from bpy.props import StringProperty, IntProperty, EnumProperty, PointerProperty, CollectionProperty, BoolProperty
-from . import StrewUi, StrewManOperators, StrewBiomeManager, StrewEnums
+from . import StrewUi, StrewManOperators, StrewBiomeManager, StrewProps
 
 
 #Place this one in the preferences in a hidden menu
@@ -393,7 +393,7 @@ def register() :
     StrewUi.register()
     StrewManOperators.register()
     StrewBiomeManager.register()
-    StrewEnums.register()
+    StrewProps.register()
     bpy.types.Scene.StrewPresetDrop = PointerProperty(type= StrewPresetProperty)
     bpy.types.Scene.StrewSourceDrop = PointerProperty(type= StrewSourceProperty)
     bpy.types.Scene.SMAL = PointerProperty(type= SMAList)
@@ -408,6 +408,6 @@ def unregister() :
     StrewUi.unregister()
     StrewManOperators.unregister()
     StrewBiomeManager.unregister()
-    StrewEnums.unregister()
+    StrewProps.unregister()
 if __name__ == "__main__":
     register()

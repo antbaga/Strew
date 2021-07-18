@@ -2,12 +2,15 @@ import bpy
 import os
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
-from . import __init__, StrewManOperators, StrewBiomeManager, StrewEnums
+from . import __init__, StrewManOperators, StrewBiomeManager, StrewProps
 import addon_utils
 
 
 StrewMasterCollection_name = 'Strew'
 StrewAssetsCollection_name = 'Strew_Assets'
+StrewCompositorScene_name = 'Strew_BiomeCompositor'
+StrewCompositorWorkspace_name = 'Strew_Compositor'
+
 
 class UiSwitch(bpy.types.PropertyGroup):
     general_panel: bpy.props.BoolProperty(
@@ -38,16 +41,12 @@ class MainPanel(bpy.types.Panel):
     bl_category = "STREW"
     bl_description = "STREW main panel"
 
+
     def draw(self, context):
         ui_switch = context.scene.strew_ui_switch
         StrewProperty = context.scene.preset_name_string
         l = self.layout
         r = l.row(align=True)
-        c = r.column(align=True)
-        c.scale_x = 0.30
-        c.scale_y = 2.0
-        c.prop(StrewProperty, "AssetList")
-        r.separator(factor=2.0)
         c = r.column(align=True)
         #Those two ones are kept here for now since i might use them later
         #c.prop(ui_switch, "general_panel", toggle = True)
@@ -61,18 +60,58 @@ class MainPanel(bpy.types.Panel):
             c.operator("strew.addasset", text="Save as asset")
             c.operator("strew.removeasset", text="remove from asset")
             c.operator("strew.setupstrew", text="setup strew")
-            c.operator("strew.invokeprefspanel", text="open Asset Manager")
+            c.operator("strew.invokeprefspanel", text="Asset Manager")
             c.operator("strew.test", text="test")
-        elif ui_switch.panels == {'Assets'}:
+            c.prop(StrewProperty, "MaterialFloat", slider = True )
+            c.operator("strew.biomecompositor", text="Biome Compositor").switcher = 0
+        elif ui_switch.panels == {'Biomes'}:
+            c = r.column(align=True)
+            c.scale_x = 0.30
+            c.scale_y = 2.0
+            c.prop(StrewProperty, "AssetList")
+            r.separator(factor=2.0)
+            c = r.column(align=True)
             c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
             c.operator("strew.createpreset", text="Save as new preset")
             c.operator("strew.importassets", text="Import All")
             c.operator("strew.addasset", text="Save as asset")
             c.operator("strew.removeasset", text="remove from asset")
+            c.operator("strew.biomecompositor", text="Exit Biome Compositor").switcher = 1
         else:
             c.operator("strew.setupstrew", text="setup strew")
             c.operator("strew.invokeprefspanel", text="open Asset Manager")
             c.operator("strew.test", text="test")
+
+
+class InvokeBiomeCompositor(bpy.types.Operator):
+    bl_idname = "strew.biomecompositor"
+    bl_label = "InvokeBiomeCompositor"
+
+    switcher : bpy.props.IntProperty(name = "switcher")
+    Current_scene : bpy.props.StringProperty(name="Current_Scene", default='Scene')
+    Current_WorkSpace: bpy.props.StringProperty(name="Current_WorkSpace", default="Layout")
+    def execute(self, context):
+        global switcher
+        global Current_scene
+        global Current_WorkSpace
+        if self.switcher == 0:
+            self.Current_scene = bpy.context.scene.name
+            self.Current_WorkSpace = bpy.context.workspace.name
+            bpy.context.window.scene = bpy.data.scenes[StrewCompositorScene_name]
+            bpy.context.window.workspace = bpy.data.workspaces[StrewCompositorWorkspace_name]
+            ui_switch = context.scene.strew_ui_switch
+            ui_switch.panels = {'Biomes'}
+            self.switcher = 1
+            print(self.Current_scene)
+            return {'FINISHED'}
+        elif self.switcher == 1:
+            bpy.context.window.scene = bpy.data.scenes[self.Current_scene]
+            bpy.context.window.workspace = bpy.data.workspaces[self.Current_WorkSpace]
+            ui_switch = context.scene.strew_ui_switch
+            ui_switch.panels = {'General'}
+            self.switcher = 0
+            print(self.Current_scene)
+            return {'FINISHED'}
 
 class InvokePrefsPanel(bpy.types.Operator):
     bl_idname = "strew.invokeprefspanel"
@@ -385,6 +424,8 @@ class SetupStrew(bpy.types.Operator):
 
     def execute(self, context):
         self.SetupCollections()
+        self.SetupScenes(context)
+        self.SetupWorkspace(context)
         SetupFolders.execute(self, context)
         return {'FINISHED'}
 
@@ -404,12 +445,34 @@ class SetupStrew(bpy.types.Operator):
             StrewMasterCollection.children.link(StrewAssetsCollection)
         # Gives pack the AssetCollection as a var usable externaly.
         return StrewAssetsCollection
-        # Pretty sure that now THIS is not neccessary.
-        return {'FINISHED'}
 
 
+    def SetupScenes(self, context):
+        StrewFolder = SetupFolders.getfilepath(self, context)
+        BlendFolder = str(StrewFolder) + "blend files\\StrewLayout.blend"
 
+        if StrewCompositorScene_name in bpy.data.scenes:
+            pass
+            # I Should inform the user that an object with same name already exists
+        else:
+            bpy.ops.wm.append(
+                filepath=os.path.join(BlendFolder + "\\Scene\\" + StrewCompositorScene_name),
+                directory=os.path.join(BlendFolder + "\\Scene\\"),
+                filename=StrewCompositorScene_name
+            )
+    def SetupWorkspace(self, context):
+        StrewFolder = SetupFolders.getfilepath(self, context)
+        BlendFolder = str(StrewFolder) + "blend files\\StrewLayout.blend"
 
+        if StrewCompositorWorkspace_name in bpy.data.workspaces:
+            pass
+            # I Should inform the user that an object with same name already exists
+        else:
+            bpy.ops.wm.link(
+                filepath=os.path.join(BlendFolder + "\\WorkSpace\\" + StrewCompositorWorkspace_name),
+                directory=os.path.join(BlendFolder + "\\WorkSpace\\"),
+                filename=StrewCompositorWorkspace_name
+            )
 
 
 #####################################################################################
@@ -429,6 +492,7 @@ classes = [
     InvokePrefsPanel,
     testop,
     UiSwitch,
+    InvokeBiomeCompositor,
 ]
 
 

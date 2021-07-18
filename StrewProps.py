@@ -31,7 +31,9 @@ def enum(self, context):
         OldPreset = CurrentPreset
         return asset_list_enum
 
-
+def materialupdate(self,context):
+    value = bpy.context.scene.preset_name_string.MaterialFloat
+    bpy.data.materials["Material"].node_tree.nodes["Principled BSDF"].inputs[5].default_value = value
 
 class Presetnamestring(bpy.types.PropertyGroup):
     presetname: bpy.props.StringProperty(
@@ -46,6 +48,11 @@ class Presetnamestring(bpy.types.PropertyGroup):
         #items=[("1I","1N","1D"),("2I","2N","2D"),("3I","3N","3D")],
         items=enum,
         options={"ENUM_FLAG"},
+    )
+    MaterialFloat: bpy.props.FloatProperty(
+        name="name:",
+        default=1.0,
+        update=materialupdate
     )
 
 
