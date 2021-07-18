@@ -64,7 +64,7 @@ class MainPanel(bpy.types.Panel):
             c.operator("strew.test", text="test")
             c.prop(StrewProperty, "MaterialFloat", slider = True )
             c.operator("strew.biomecompositor", text="Biome Compositor").switcher = 0
-        elif ui_switch.panels == {'Biomes'}:
+        elif ui_switch.panels == {'Biomes'} or bpy.context.scene.name == StrewCompositorScene_name or bpy.context.workspace.name == StrewCompositorWorkspace_name:
             c = r.column(align=True)
             c.scale_x = 0.30
             c.scale_y = 2.0
