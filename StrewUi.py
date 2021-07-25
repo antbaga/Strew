@@ -5,12 +5,15 @@ from bpy.props import StringProperty
 from . import __init__, StrewManOperators, StrewBiomeManager, StrewProps
 import addon_utils
 
+def variables(get):
+    if get == "GeonodeMasterName":
+        return "Geometry Nodes.005"
 
 StrewMasterCollection_name = 'Strew'
 StrewAssetsCollection_name = 'Strew_Assets'
 StrewCompositorScene_name = 'Strew_BiomeCompositor'
 StrewCompositorWorkspace_name = 'Strew_Compositor'
-
+GeonodeMasterName = "Geometry Nodes.005"
 
 class UiSwitch(bpy.types.PropertyGroup):
     general_panel: bpy.props.BoolProperty(
@@ -45,6 +48,7 @@ class MainPanel(bpy.types.Panel):
     def draw(self, context):
         ui_switch = context.scene.strew_ui_switch
         StrewProperty = context.scene.preset_name_string
+
         l = self.layout
         r = l.row(align=True)
         c = r.column(align=True)
@@ -52,8 +56,10 @@ class MainPanel(bpy.types.Panel):
         #c.prop(ui_switch, "general_panel", toggle = True)
         #c.prop(ui_switch, "asset_manager", toggle = True)
         #c.prop(ui_switch, "panels")
-        if ui_switch.panels == {'General'}:
+
+        if ui_switch.panels == {'General'} and bpy.context.window.workspace.name != StrewCompositorWorkspace_name:
             # Calls the functions here
+            c.operator("strew.addgrass", text="Add Grass")
             c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
             c.operator("strew.createpreset", text="Save as new preset")
             c.operator("strew.importassets", text="Import All")
@@ -62,21 +68,37 @@ class MainPanel(bpy.types.Panel):
             c.operator("strew.setupstrew", text="setup strew")
             c.operator("strew.invokeprefspanel", text="Asset Manager")
             c.operator("strew.test", text="test")
-            c.prop(StrewProperty, "MaterialFloat", slider = True )
             c.operator("strew.biomecompositor", text="Biome Compositor").switcher = 0
-        elif ui_switch.panels == {'Biomes'} or bpy.context.scene.name == StrewCompositorScene_name or bpy.context.workspace.name == StrewCompositorWorkspace_name:
+
+        elif ui_switch.panels == {'Biomes'} or bpy.context.scene.name == StrewCompositorScene_name or bpy.context.window.workspace.name == StrewCompositorWorkspace_name:
+            Geonode_Tree = bpy.data.node_groups["Geometry Nodes.005"].nodes["Group.012"].inputs
+            Geonode_Grass = bpy.data.node_groups["Geometry Nodes.005"].nodes["Group.013"].inputs
+            Geonode_Rocks = bpy.data.node_groups["Geometry Nodes.005"].nodes["Group.010"].inputs
             c = r.column(align=True)
             c.scale_x = 0.30
             c.scale_y = 2.0
+            c.prop(StrewProperty, "Decorator")
+            c.separator(factor = 1.0)
             c.prop(StrewProperty, "AssetList")
             r.separator(factor=2.0)
             c = r.column(align=True)
             c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
-            c.operator("strew.createpreset", text="Save as new preset")
-            c.operator("strew.importassets", text="Import All")
-            c.operator("strew.addasset", text="Save as asset")
-            c.operator("strew.removeasset", text="remove from asset")
+            c.operator("strew.createpreset",    text="Save as new preset")
+            c.operator("strew.importassets",    text="Import All")
+            c.operator("strew.addasset",        text="Save as asset")
+            c.operator("strew.removeasset",     text="remove from asset")
             c.operator("strew.biomecompositor", text="Exit Biome Compositor").switcher = 1
+            c.separator(factor = 3.0)
+            if StrewProperty.Decorator == {"Trees"}:
+                for Input in Geonode_Tree:
+                    c.prop(Input, "default_value")
+            if StrewProperty.Decorator == {"Grass"}:
+                for Input in Geonode_Grass:
+                    c.prop(Input, "default_value")
+            if StrewProperty.Decorator == {"Rocks"}:
+                for Input in Geonode_Rocks:
+                    c.prop(Input, "default_value")
+
         else:
             c.operator("strew.setupstrew", text="setup strew")
             c.operator("strew.invokeprefspanel", text="open Asset Manager")
@@ -426,6 +448,7 @@ class SetupStrew(bpy.types.Operator):
         self.SetupCollections()
         self.SetupScenes(context)
         self.SetupWorkspace(context)
+        self.ImportGeonodes(context)
         SetupFolders.execute(self, context)
         return {'FINISHED'}
 
@@ -473,7 +496,18 @@ class SetupStrew(bpy.types.Operator):
                 directory=os.path.join(BlendFolder + "\\WorkSpace\\"),
                 filename=StrewCompositorWorkspace_name
             )
+    def ImportGeonodes(self, context):
+        StrewFolder = SetupFolders.getfilepath(self, context)
+        BlendFolder = str(StrewFolder) + "blend files\\StrewLayout.blend"
 
+        if GeonodeMasterName in bpy.data.node_groups:
+            pass
+        else:
+            bpy.ops.wm.append(
+                filepath=os.path.join(BlendFolder + "\\NodeTree\\" + GeonodeMasterName),
+                directory=os.path.join(BlendFolder + "\\NodeTree\\"),
+                filename=GeonodeMasterName
+            )
 
 #####################################################################################
 #

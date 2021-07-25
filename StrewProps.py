@@ -45,8 +45,12 @@ class Presetnamestring(bpy.types.PropertyGroup):
         default="Custom Preset",
     )
     AssetList: EnumProperty(
-        #items=[("1I","1N","1D"),("2I","2N","2D"),("3I","3N","3D")],
         items=enum,
+        options={"ENUM_FLAG"},
+    )
+    Decorator: EnumProperty(
+        items=[("Trees","Trees","Trees"),("Grass","Grass","Grass"),("Rocks","Rocks","Rocks")],
+        #items=enum,
         options={"ENUM_FLAG"},
     )
     MaterialFloat: bpy.props.FloatProperty(

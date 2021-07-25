@@ -1,6 +1,6 @@
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
-from . import __init__, StrewUi, StrewProps
+from . import __init__, StrewUi, StrewProps, StrewBiomeManager
 import addon_utils,shutil,bpy,os,zipfile
 
 #####################################################################################
@@ -341,6 +341,19 @@ class GetAssetList():
                     pass
         return asset_list
 
+#####################################################################################
+#
+#       MANAGE TERRAINS
+#
+#####################################################################################
+
+class Addgrass(Operator):
+    bl_idname = "strew.addgrass"
+    bl_label = "add grass"
+
+    def execute(self, context):
+        StrewBiomeManager.ApplyGrass.ApplyGeonode(self, context)
+        return {'FINISHED'}
 
 #####################################################################################
 #
@@ -360,6 +373,7 @@ SCENE_OT_list_populate,
 RenamePresetPopup,
 SubListPopup,
 RegisterAsset,
+Addgrass,
 ]
 
 def register() :
