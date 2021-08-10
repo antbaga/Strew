@@ -2,7 +2,7 @@ import bpy
 import os
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
-from . import __init__, StrewManOperators, StrewBiomeManager, StrewProps, StrewFunctions
+from . import __init__, StrewManOperators, StrewBiomeFunctions, StrewProps, StrewFunctions
 import addon_utils
 
 
@@ -25,7 +25,7 @@ class MainPanel(bpy.types.Panel):
         if ui_switch.panels == {'General'} and\
                 bpy.context.window.workspace.name != StrewFunctions.strew_compositor_workspace:
             # Calls the functions here
-            c.operator("strew.add_grass", text="Add Grass")
+            c.operator("strew.import_biome", text="Import biome")
             c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
             # c.operator("strew.createpreset", text="Save as new preset")
             # c.operator("strew.importassets", text="Import All")

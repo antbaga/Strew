@@ -10,7 +10,7 @@ from bpy.props import CollectionProperty,\
                       IntProperty,\
                       BoolProperty
 from . import StrewManOperators,\
-              StrewBiomeManager,\
+              StrewBiomeFunctions,\
               StrewFunctions,\
               StrewProps,\
               StrewUi
@@ -322,7 +322,7 @@ def register():
         bpy.utils.register_class(cls)
     StrewUi.register()
     StrewManOperators.register()
-    StrewBiomeManager.register()
+    StrewBiomeFunctions.register()
     StrewProps.register()
     bpy.types.Scene.StrewPresetDrop = PointerProperty(type=StrewPresetProperty)
     bpy.types.Scene.StrewSourceDrop = PointerProperty(type=StrewSourceProperty)
@@ -339,7 +339,7 @@ def unregister():
     del bpy.types.Scene.SMSL
     StrewUi.unregister()
     StrewManOperators.unregister()
-    StrewBiomeManager.unregister()
+    StrewBiomeFunctions.unregister()
     StrewProps.unregister()
 
 

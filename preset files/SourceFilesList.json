@@ -10,11 +10,11 @@
 		]
 	}
 	],
-	"Rocks":
+	"rocks":
 	[
 		{
-		"name": "Rocks",
-		"identifier": "Rocks",
+		"name": "rocks",
+		"identifier": "rocks",
 		"description": "All things that are minerals.",
 		"assets":
 		[
@@ -33,14 +33,21 @@
 		]
 	}
 	],
-	"Plants":
+	"plants":
 	[
 		{
-		"name": "Plants",
+		"name": "plants",
 		"identifier": "Plants",
 		"description": "All things that are vegetables.",
 		"assets":
 		[
+			{				
+				"file":"plants.blend",
+				"collection": "",
+				"name":"Basilic",
+				"description":"Beautiful basilic"
+			}
+
 		]		
 	
 		}

@@ -2,7 +2,7 @@ import bpy
 import os
 from bpy.types import Operator, AddonPreferences, PropertyGroup, UIList, Panel
 from bpy.props import StringProperty, IntProperty, EnumProperty, PointerProperty, CollectionProperty, BoolProperty
-from . import __init__, StrewManOperators, StrewBiomeManager, StrewUi, StrewFunctions
+from . import __init__, StrewUi, StrewFunctions
 import addon_utils
 
 asset_list_enum = []

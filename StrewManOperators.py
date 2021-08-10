@@ -1,6 +1,6 @@
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
-from . import __init__, StrewUi, StrewProps, StrewBiomeManager, StrewFunctions
+from . import __init__, StrewUi, StrewProps, StrewBiomeFunctions, StrewFunctions
 import addon_utils
 import bpy
 import os
@@ -134,11 +134,11 @@ class AddPresetPopup(Operator):
     bl_label = "Create new preset"
 
     def draw(self, context):
-        properties = context.scene.preset_name_string
+        biome = context.scene.preset_name_string
         lay = self.layout
         c = lay.column(align=True)
-        c.prop(properties, "new_name")
-        c.prop(properties, "new_description")
+        c.prop(biome, "new_name")
+        c.prop(biome, "new_description")
 
     def execute(self, context):
         biome = context.scene.preset_name_string
@@ -205,7 +205,6 @@ class RenamePresetPopup(Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
-
 #####################################################################################
 #
 #       ADD OR REMOVE ASSETS FROM BIOME
@@ -227,8 +226,8 @@ class AddAssetManager(Operator):
         cts = bpy.context.scene
         active_object = cts.SMSL.collection[cts.SMSL.active_user_index]
         asset = active_object.name
-        preset = cts.StrewPresetDrop.StrewPresetDropdown
-        source = cts.StrewSourceDrop.StrewSourceDropdown
+        preset = StrewFunctions.selected_biome(context)
+        source = StrewFunctions.selected_source(context)
         if source == "This_file":
             source = "custom.blend"
 
@@ -354,12 +353,30 @@ class ImportBiome(Operator):
     bl_idname = "strew.import_biome"
     bl_label = "Import_biome"
 
+    # Since this is the first operator to be called on the UI
+    # a full setup is done. However, most functions have fallback
+    # in case they are already setup
+
     def execute(self, context):
-        # setup strew
-        # get biome name
-        # import all assets
-        # assign biome
-        # configure biome
+        SFunc = StrewFunctions
+        SetupStrew.execute(self, context)                                  # setup strew
+        strew_collection = SFunc.setup_collections()                       # get collection name
+        terrain_object = bpy.context.active_object                         # get future terrain
+        selected_biome = SFunc.selected_biome(context)                     # get biome name
+        asset_list = SFunc.get_assets_list(self, context, selected_biome)  # get asset list
+
+        master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
+        master_collection_layer.children[SFunc.strew_collection_assets].exclude = False           # enable collections
+        master_collection_layer.children[SFunc.strew_collection_custom_assets].exclude = False    # to import assets
+
+        for asset in asset_list:                                                            # import assets
+            StrewFunctions.import_asset(self, context, asset['file'], asset['name'], strew_collection)
+        strew_biome = StrewBiomeFunctions.apply_geometry_nodes(terrain_object)              # assign biome
+        StrewBiomeFunctions.assign_collection(strew_biome, strew_collection, "rocks")       # configure biome
+        """YOU WILL NEED TO CHANGE THE ROCKS FOR SOMETHING MODULAR"""
+        master_collection_layer.children[SFunc.strew_collection_assets].exclude = True            # disable collections
+        master_collection_layer.children[SFunc.strew_collection_custom_assets].exclude = True     # so user is not bothered
+
         return {'FINISHED'}
 
 
@@ -368,15 +385,24 @@ class ImportAsset(Operator):
     bl_label = "import_assets"
 
     def execute(self, context):
-        strew_collection = StrewFunctions.setup_collections()               # get the main collection
-        biome = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown       # get the selected biome
-        blend_folder = StrewFunctions.get_path(self, context, "blend")      # get the blend folder
+        SFunc = StrewFunctions
+        strew_collection = SFunc.setup_collections()                                        # get the main collection
+        biome = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown                       # get the selected biome
+        blend_folder = SFunc.get_path(self, context, "blend")                               # get the blend folder
 
-        asset_list = StrewFunctions.get_assets_list(self, context, biome)   # get the assets list
-        for asset in asset_list:                                            # import the assets
+        master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
+        master_collection_layer.children[SFunc.strew_collection_assets].exclude = False           # enable collections
+        master_collection_layer.children[SFunc.strew_collection_custom_assets].exclude = False    # to import assets
+
+        asset_list = SFunc.get_assets_list(self, context, biome)                            # get the assets list
+        for asset in asset_list:                                                            # import the assets
             asset_name = asset['name']
             asset_path = blend_folder + asset['file']
-            StrewFunctions.import_asset(asset_path, asset_name, strew_collection)
+            SFunc.import_asset(self, context, asset_path, asset_name, strew_collection)
+
+        master_collection_layer.children[SFunc.strew_collection_assets].exclude = True         # disable collections
+        master_collection_layer.children[SFunc.strew_collection_custom_assets].exclude = True  # so user is not bothered
+
         return {'FINISHED'}
 
 #####################################################################################
@@ -384,16 +410,6 @@ class ImportAsset(Operator):
 #       MANAGE TERRAINS
 #
 #####################################################################################
-# temporary
-
-
-class Addgrass(Operator):
-    bl_idname = "strew.add_grass"
-    bl_label = "add grass"
-
-    def execute(self, context):
-        StrewBiomeManager.apply_geometry_nodes()
-        return {'FINISHED'}
 
 
 #####################################################################################
@@ -428,7 +444,6 @@ classes = [
     ImportBiome,                    # strew.import_biome
     ImportAsset,                    # strew.import_assets
     # --- Manage terrains ---
-    Addgrass,                       # strew.add_grass
 ]
 
 

@@ -1,4 +1,4 @@
-from . import __init__, StrewManOperators, StrewBiomeManager, StrewProps, StrewUi
+from . import __init__, StrewProps, StrewUi
 import bpy
 import os
 import json
@@ -19,7 +19,7 @@ geometry_node_master = "Geometry Nodes.005"
 
 #####################################################################################
 #
-#       SETUP
+#       GET VARIABLES
 #
 #####################################################################################
 
@@ -38,6 +38,23 @@ def get_path(self, context, path):
         return filepath
     if path == 'preset_file':
         return presets + preset_file
+
+
+def selected_biome(context):
+    biome_name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
+    return biome_name
+
+
+def selected_source(context):
+    source_name = bpy.context.scene.StrewSourceDrop.StrewSourceDropdown
+    return source_name
+
+
+#####################################################################################
+#
+#       SETUP
+#
+#####################################################################################
 
 
 def setup_collections():
@@ -59,7 +76,11 @@ def setup_collections():
         custom_assets_collection = collections.new(strew_collection_custom_assets)          # look for custom collection
         master_collection.children.link(custom_assets_collection)                           # and creates it if it does
     else:                                                                                   # not exist.
-        pass
+        custom_assets_collection = collections[strew_collection_custom_assets]
+
+    master_collection_layer = bpy.context.view_layer.layer_collection.children[strew_collection_master]
+    master_collection_layer.children[strew_collection_assets].exclude = True                      # disable collections
+    master_collection_layer.children[strew_collection_custom_assets].exclude = True               # so user is not bothered
 
     return assets_collection
 
@@ -372,26 +393,28 @@ def export_asset(self, context):
 #####################################################################################
 
 
-def set_active_collection(parent_collection, collection_name):
+def set_active_collection(parent_collection, target_collection):
     for collection in parent_collection.children:
-        if collection.name == collection_name:
+        if collection.name == target_collection.name:
             bpy.context.view_layer.active_layer_collection = collection
-        elif len(collection.children):
-            set_active_collection(collection, collection_name)
-        else:
-            print("can't find collection")
             return
+        elif len(collection.children):
+            set_active_collection(collection, target_collection)
+            pass
+    return
 
 
-def import_asset(asset_path, asset_name, collection):
-    collections = bpy.data.collections                                  # just for clarity of code
-    setup_collections()                                                 # ensure all collections are here
+def import_asset(self, context, asset_path, asset_name, target_collection):
 
-    if asset_name in collections[collection.name].all_objects:          # check if object exists
+    if asset_name in target_collection.all_objects:        # check if object exists
         print("Object with this name already exists.")
         return
-    else:                                                               # select custom collection
-        set_active_collection(bpy.context.view_layer.layer_collection, collection)
+    else:                                                               # select target collection
+        if '%STREW%' in asset_path:                                     # get real path of asset
+            asset_path = asset_path.replace('%STREW%', get_path(self, context, 'blend'))
+        # might want to always do it and assume all assets are in the same folder
+
+        set_active_collection(bpy.context.view_layer.layer_collection, target_collection)
 
         bpy.ops.wm.append(                                              # import asset
             filepath=os.path.join(asset_path + "\\Object\\" + asset_name),
