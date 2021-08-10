@@ -269,7 +269,7 @@ class RemoveAssetManager(Operator):
         asset_id = cts.SMAL.active_user_index                        # find the object id
         biome = cts.StrewPresetDrop.StrewPresetDropdown              # find the biome
 
-        StrewFunctions.remove_asset(self, context, biome, asset_id)  # remove the asset
+        StrewFunctions.remove_asset_id(self, context, biome, asset_id)  # remove the asset
         SCENE_OT_list_populate.execute(self, context)                # update the list in UI
 
         return {'FINISHED'}
