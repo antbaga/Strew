@@ -1,0 +1,48 @@
+{
+	"This_file":
+	[
+	{
+		"name": "This file",
+		"identifier": "This_file",
+		"description": "All objects present in this file.",
+		"assets":
+		[
+		]
+	}
+	],
+	"Rocks":
+	[
+		{
+		"name": "Rocks",
+		"identifier": "Rocks",
+		"description": "All things that are minerals.",
+		"assets":
+		[
+			{
+				"file":"rocks.blend",
+				"collection": "Essence 1",
+				"name":"Variante 1",
+				"description":"less beautiful cube"
+			},
+			{
+				"file":"rocks.blend",
+				"collection": "Essence 1",
+				"name":"Variante 2",
+				"description":"less beautiful cube"
+			}
+		]
+	}
+	],
+	"Plants":
+	[
+		{
+		"name": "Plants",
+		"identifier": "Plants",
+		"description": "All things that are vegetables.",
+		"assets":
+		[
+		]		
+	
+		}
+	]
+}

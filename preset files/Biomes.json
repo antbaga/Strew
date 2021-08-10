@@ -1,0 +1,52 @@
+{
+    "Biome 01": [
+        {
+            "name": "Biome 01",
+            "identifier": "Biome 01",
+            "description": "Clone of Biome 01",
+            "assets": [
+                {
+                    "file": "Rocks.blend",
+                    "collection": "Variante 1",
+                    "name": "Espece 1_Variante 1_LOD0",
+                    "description": "beautiful cube"
+                },
+                {
+                    "file": "Rocks.blend",
+                    "collection": "Variante 2",
+                    "name": "Espece 1_Variante 2_LOD0",
+                    "description": "less beautiful cube"
+                }
+            ]
+        }
+    ],
+    "Biome 03": [
+        {
+            "name": "Biome 03",
+            "identifier": "Biome 03",
+            "description": "Custom Preset",
+            "assets": []
+        }
+    ],
+    "Biome B": [
+        {
+            "name": "Biome B",
+            "identifier": "Biome B",
+            "description": "Clone of Biome 01",
+            "assets": [
+                {
+                    "file": "Rocks.blend",
+                    "collection": "Variante 1",
+                    "name": "Espece 1_Variante 1_LOD0",
+                    "description": "beautiful cube"
+                },
+                {
+                    "file": "Rocks.blend",
+                    "collection": "Variante 2",
+                    "name": "Espece 1_Variante 2_LOD0",
+                    "description": "less beautiful cube"
+                }
+            ]
+        }
+    ]
+}

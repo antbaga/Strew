@@ -1,384 +1,442 @@
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
-from . import __init__, StrewUi, StrewProps, StrewBiomeManager
-import addon_utils,shutil,bpy,os,zipfile
+from . import __init__, StrewUi, StrewProps, StrewBiomeManager, StrewFunctions
+import addon_utils
+import bpy
+import os
+
+#####################################################################################
+#
+#       SETUP
+#
+#####################################################################################
+
+
+class Initialise(Operator):
+    bl_idname = "strew.initialise"
+    bl_label = "Initialise"
+
+    def execute(self, context):
+        biome = StrewFunctions.get_enum_biomes(self, context)
+        # Ensures the first biome is selected, or it causes a bug.
+        # for data in biome:                                  # get the biome identifier
+        #    identifier = data[0]
+        if bpy.context.scene.StrewPresetDrop.StrewPresetDropdown == biome[0][0]:
+            bpy.context.scene.StrewPresetDrop.StrewPresetDropdown = biome[0][0]
+        else:
+            pass
+        return {'FINISHED'}
+
+
+class SetupStrew(bpy.types.Operator):
+    bl_idname = "strew.setup_strew"
+    bl_label = "setup_strew"
+
+    def execute(self, context):
+        StrewFunctions.setup_collections()
+        StrewFunctions.setup_scenes(self, context)
+        StrewFunctions.setup_workspace(self, context)
+        StrewFunctions.import_geometry_nodes(self, context)
+        return {'FINISHED'}
+
+#####################################################################################
+#
+#       INSTANCE PANEL OR CHANGE VIEW
+#
+#####################################################################################
+
+
+class InstancePreferencesPanel(Operator):
+    bl_idname = "strew.instance_prefs_panel"
+    bl_label = "instance_preferences_panel"
+
+    # Instantiate the preferences blender windows
+    # configure the window to addons, then look for strew
+    # expand the options automatically
+    # have to do it via modal to try again and again until it's done, or fail
+
+    def modal(self, context, event):
+        mod = addon_utils.addons_fake_modules.get("Strew")
+        info = addon_utils.module_bl_info(mod)
+
+        if info["show_expanded"] is True:
+            self.cancel(context)
+            return {'CANCELLED'}
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            self.cancel(context)
+            return {'CANCELLED'}
+        if event.type == 'TIMER':
+            info["show_expanded"] = True
+        return {'PASS_THROUGH'}
+
+    def execute(self, context):
+        bpy.ops.screen.userpref_show("INVOKE_DEFAULT")
+        bpy.context.preferences.active_section = 'ADDONS'
+        bpy.data.window_managers["WinMan"].addon_search = "strew"
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.1, window=context.window)
+        wm.modal_handler_add(self)
+        bpy.ops.strew.source_populate()
+        bpy.ops.strew.list_populate()
+        bpy.ops.strew.initialise()
+        return {'RUNNING_MODAL'}
+
+    def cancel(self, context):
+        wm = context.window_manager
+        wm.event_timer_remove(self._timer)
+
+
+class InstanceBiomeCompositor(Operator):
+    bl_idname = "strew.biome_compositor"
+    bl_label = "Instance_Biome_Compositor"
+
+    switcher: bpy.props.IntProperty(name="switcher")
+    current_scene: bpy.props.StringProperty(name="Current_Scene", default='Scene')
+    current_workspace: bpy.props.StringProperty(name="Current_WorkSpace", default="Layout")
+
+    def execute(self, context):
+        global switcher
+        global current_scene
+        global current_workspace
+        strew_workspace = StrewFunctions.strew_compositor_workspace
+        strew_scene = StrewFunctions.strew_compositor_scene
+
+        if self.switcher == 0:
+            current_scene = bpy.context.scene.name
+            current_workspace = bpy.context.workspace.name
+            bpy.context.window.scene = bpy.data.scenes[strew_scene]
+            bpy.context.window.workspace = bpy.data.workspaces[strew_workspace]
+            ui_switch = context.scene.strew_ui_switch
+            ui_switch.panels = {'Biomes'}
+            self.switcher = 1
+
+            return {'FINISHED'}
+
+        elif self.switcher == 1:
+            bpy.context.window.scene = bpy.data.scenes[self.current_scene]
+            bpy.context.window.workspace = bpy.data.workspaces[self.current_workspace]
+            ui_switch = context.scene.strew_ui_switch
+            ui_switch.panels = {'General'}
+            self.switcher = 0
+
+            return {'FINISHED'}
+
 
 #####################################################################################
 #
 #       POPUP BOX
 #
-#####################################################################################   
+#####################################################################################
 
-    
-class AddPresetPopup(bpy.types.Operator):
-    bl_idname = "strew.addpresetpopup"
+
+class AddPresetPopup(Operator):
+    bl_idname = "strew.add_preset_popup"
     bl_label = "Create new preset"
 
-    
-    def draw(self,context):
+    def draw(self, context):
         properties = context.scene.preset_name_string
-        l = self.layout
-        c = l.column(align=True)
-        c.prop(properties, "presetname")
-        c.prop(properties, "presetdesc")
+        lay = self.layout
+        c = lay.column(align=True)
+        c.prop(properties, "new_name")
+        c.prop(properties, "new_description")
 
     def execute(self, context):
-        properties = context.scene.preset_name_string
-        ManagePreset.New(self, context, properties.presetname, properties.presetdesc)
+        biome = context.scene.preset_name_string
+        StrewFunctions.new_biome(self, context, biome.new_name, biome.new_description)
         return {'FINISHED'}
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
-    
-class ClonePresetPopup(bpy.types.Operator):
-    bl_idname = "strew.clonepresetpopup"
+
+
+class ClonePresetPopup(Operator):
+    bl_idname = "strew.clone_preset_popup"
     bl_label = "Clone preset"
 
     def draw(self, context):
         properties = context.scene.preset_name_string
-        l = self.layout
-        c = l.column(align=True)
-        c.prop(properties, "presetname")
-        c.prop(properties, "presetdesc")
-        ##Bon, ça marche toujours pas
-        #Name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
+        lay = self.layout
+        c = lay.column(align=True)
+        c.prop(properties, "new_name")
+        c.prop(properties, "new_description")
+
     def execute(self, context):
-        id = bpy.context.scene.StrewPresetDrop["StrewPresetDropdown"]
-        properties = context.scene.preset_name_string
-        ManagePreset.Clone(self, context,id, properties.presetname, properties.presetdesc)
+        biome_initial_name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
+        biome = context.scene.preset_name_string
+        StrewFunctions.clone_biome(self, context, biome_initial_name, biome.new_name, biome.new_description)
         return {'FINISHED'}
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
-class RemovePresetPopup(bpy.types.Operator):
-    bl_idname = "strew.removepresetpopup"
+
+class RemovePresetPopup(Operator):
+    bl_idname = "strew.remove_preset_popup"
     bl_label = "Remove this preset?"
 
-
     def execute(self, context):
-        dropid = bpy.context.scene.StrewPresetDrop["StrewPresetDropdown"]
-        ManagePreset.Remove(self, context, dropid)
+        biome = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown       # get the biome name
+        StrewFunctions.remove_biome(self, context, biome)                   # remove the biome
+
         return {'FINISHED'}
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
-class RenamePresetPopup(bpy.types.Operator):
-    bl_idname = "strew.renamepresetpopup"
+
+class RenamePresetPopup(Operator):
+    bl_idname = "strew.rename_preset_popup"
     bl_label = "Rename preset"
-    
-    def draw(self,context):
+
+    def draw(self, context):
         properties = context.scene.preset_name_string
-        l = self.layout
-        c = l.column(align=True)
-        c.prop(properties, "presetname")
-        c.prop(properties, "presetdesc")
+        lay = self.layout
+        c = lay.column(align=True)
+        c.prop(properties, "new_name")
+        c.prop(properties, "new_description")
 
     def execute(self, context):
-        properties = context.scene.preset_name_string
-        id = bpy.context.scene.StrewPresetDrop["StrewPresetDropdown"]
-        oldname = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
-        ManagePreset.Rename(self, context,id, oldname, properties.presetname, properties.presetdesc)
+        biome = context.scene.preset_name_string                                    # get the infos of biome
+        biome_initial_name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown       # from the popup box
+        StrewFunctions.rename_biome(self, context, biome_initial_name, biome.new_name, biome.new_description)
         return {'FINISHED'}
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
-    
-class SubListPopup(bpy.types.Operator):
-    bl_idname = "strew.sublistpopup"
-    bl_label = "sub list popup"
 
-    
 
-    def execute(self, context):
-        name = self.text
-        desc = self.desc
-        ManagePreset.New(self, context, name, desc)
-        return {'FINISHED'}
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
 
 #####################################################################################
 #
-#       OPERATORS TO MODIFY LISTS
+#       ADD OR REMOVE ASSETS FROM BIOME
 #
-#####################################################################################   
+#####################################################################################
 
-#TODO: make a copy of the file on first edition, and only replace original when user click confirm.
-# do not delet the temp file, it will be overwritten by next one. can act as a recovery for large edits.
-class RegisterAsset(Operator):
-    bl_idname = "strew.registerasset"
-    bl_label = "registerasset"
-    
-    def execute(self, context):
-        objname = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index].name
-        obj= {bpy.context.scene.objects[objname]}
-        #obj= {objects for objects in bpy.context.selected_objects}
-        StrewFolder = StrewUi.SetupFolders.getfilepath(self, context)  
-        base_path= f'{StrewFolder}blend files\\'
-        bpy.data.libraries.write(f'{base_path}custom.blend',obj, fake_user=True)
-        return {'FINISHED'}
 
-class AddAssetToPreset(Operator):
-    bl_idname = "strew.addassettopreset"
-    bl_label = "addassettopreset"
-    #bl_description = "add asset to preset"
-    
+class AddAssetManager(Operator):
+    bl_idname = "strew.add_asset_manager"
+    bl_label = "add_asset_manager"
+
+    # This operator adds an asset to a biome from the asset manager.
+    # it takes both source file and target biome
+    # then checks if asset comes from this file to ask the user if he wants
+    # to register the asset in a permanent file like custom.blend
+    # TODO: ask the user and register it
+
     def execute(self, context):
         cts = bpy.context.scene
         active_object = cts.SMSL.collection[cts.SMSL.active_user_index]
         asset = active_object.name
         preset = cts.StrewPresetDrop.StrewPresetDropdown
         source = cts.StrewSourceDrop.StrewSourceDropdown
-        print(source)
         if source == "This_file":
             source = "custom.blend"
-        
-        StrewUi.ManageAsset.AddAsset(self, context, preset, f"{source},{asset}")
+
+        StrewFunctions.add_asset(self, context, preset, source, asset)
         SCENE_OT_list_populate.execute(self, context)
         return {'FINISHED'}
-    
-class RemoveAssetFromPreset(Operator):
-    bl_idname = "strew.removeassetfrompreset"
-    bl_label = "remove asset from preset"
-    #bl_description = "remove asset from preset"
-    
-    def execute(self, context):
-        cts = bpy.context.scene
-        active_object = cts.SMAL.collection[cts.SMAL.active_user_index]
-        preset = cts.StrewPresetDrop.StrewPresetDropdown
 
-        StrewUi.ManageAsset.RemoveAssetIndex(self, context, preset, cts.SMAL.active_user_index)
-        SCENE_OT_list_populate.execute(self, context)
-        
-        return {'FINISHED'}
-    
-class SCENE_OT_list_populate(Operator):
-    bl_idname = "scene.list_populate"
-    bl_label = "Populate list"
-    
-    def execute(self, context):
-        context.scene.SMAL.collection.clear()
-        preset = context.scene.StrewPresetDrop.StrewPresetDropdown
-        AssetList, AssetListName = GetAssetList.Variant(self, context, preset)
-        for Asset in AssetList:
-            item = context.scene.SMAL.collection.add()
-            Path = Asset.split(",")
-            if len(Path) == 3: item.name = Path[2]
-            if len(Path) == 2: item.name = Path[1]
-            item.description = Asset
-        return {'FINISHED'}
-    
-class SCENE_OT_source_populate(Operator):
-    bl_idname = "scene.source_populate"
-    bl_label = "Populate source"
-    
-    def execute(self,context):
-        context.scene.SMSL.collection.clear()
-        preset = context.scene.StrewSourceDrop.StrewSourceDropdown
 
-        if preset != "This_file":
-            AssetList, AssetListName = GetAssetList.Variant(self, context, preset)
-            for Asset in AssetList:
-                item = context.scene.SMSL.collection.add()
-                Path = Asset.split(",")
-                item.name = Path[2]
-                item.description = Asset
+class AddAssetView(Operator):
+    bl_idname = "strew.add_asset_view"
+    bl_label = "add_asset_view"
+
+    # this operator adds an asset or group of assets to a biome from the manager
+    # it takes the biome, and the name of the file
+    # if it comes from this file, it asks the user if he wants to add to permanent file
+    # then, if the file has not been saved (thus, has no name) it stops and tell the user to save.
+
+    def execute(self, context):
+        # TODO: add "if save to custom:"
+        if bpy.data.filepath != "":
+            biome = context.scene.StrewPresetDrop.StrewPresetDropdown
+            file_name = bpy.path.basename(bpy.data.filepath)
+
+            for obj in bpy.context.selected_objects:
+                StrewFunctions.add_asset(self, context, biome, file_name, obj.name)
             return {'FINISHED'}
         else:
+            print("can't save as asset from temporary blend file yet. please save your file")
+            return {'FINISHED'}
+
+
+class RemoveAssetManager(Operator):
+    bl_idname = "strew.remove_asset_manager"
+    bl_label = "remove_asset_manager"
+
+    def execute(self, context):
+        cts = bpy.context.scene
+        asset_id = cts.SMAL.active_user_index                        # find the object id
+        biome = cts.StrewPresetDrop.StrewPresetDropdown              # find the biome
+
+        StrewFunctions.remove_asset(self, context, biome, asset_id)  # remove the asset
+        SCENE_OT_list_populate.execute(self, context)                # update the list in UI
+
+        return {'FINISHED'}
+
+
+class RemoveAssetView(Operator):
+    bl_idname = "strew.remove_asset_view"
+    bl_label = "remove_asset_view"
+
+    def execute(self, context):
+        biome = context.scene.StrewPresetDrop.StrewPresetDropdown
+        file_name = bpy.path.basename(bpy.data.filepath)
+
+        for obj in bpy.context.selected_objects:
+            StrewFunctions.remove_asset(self, context, biome, obj.name, file_name)
+        return {'FINISHED'}
+
+
+class SaveAsset(Operator):
+    bl_idname = "strew.save_asset"
+    bl_label = "save_asset_in_file"
+
+    def execute(self, context):
+        StrewFunctions.export_asset(self, context)
+        return{'FINISHED'}
+
+#####################################################################################
+#
+#       UPDATE LISTS FOR UI
+#
+#####################################################################################
+
+
+class SCENE_OT_list_populate(Operator):
+    bl_idname = "strew.list_populate"
+    bl_label = "Populate list"
+
+    def execute(self, context):
+        context.scene.SMAL.collection.clear()                                   # clear the list
+        biome = context.scene.StrewPresetDrop.StrewPresetDropdown               # get the biome name
+        AssetList = StrewFunctions.get_assets_list(self, context, biome)        # get the asset list
+        for Asset in AssetList:
+            item = context.scene.SMAL.collection.add()                          # add each asset to list
+            item.name = Asset['name']
+            item.description = Asset
+        return {'FINISHED'}
+
+
+class SCENE_OT_source_populate(Operator):
+    bl_idname = "strew.source_populate"
+    bl_label = "Populate source"
+
+    def execute(self, context):
+        context.scene.SMSL.collection.clear()
+        biome = context.scene.StrewSourceDrop.StrewSourceDropdown
+
+        if biome == "This_file":
             blend = bpy.path.basename(bpy.context.blend_data.filepath)
             AssetList = bpy.context.scene.objects
             for Asset in AssetList:
                 item = context.scene.SMSL.collection.add()
                 item.name = Asset.name
-                item.description = blend +","+ Asset.name
+                item.description = blend + "," + Asset.name
             return {'FINISHED'}
+        else:
+            AssetList = StrewFunctions.get_sources_assets(self, context, biome)
+            for Asset in AssetList:
+                item = context.scene.SMSL.collection.add()
+                item.name = Asset['name']
+                item.description = Asset['description']
+                item.identifier = Asset['file'] + "\\" + Asset['name']
+            return {'FINISHED'}
+
 #####################################################################################
 #
-#       OPERATORS TO ADD OR REMOVE PRESETS
+#       IMPORT OR EXPORT
 #
-##################################################################################### 
-
-class ManagePreset():
-    def New(self, context, name, desc):
-        formatname = str(name).replace(" ", "_")
-        formatdesc = str(desc).replace(",", ".")
-        StrewFolder = StrewUi.SetupFolders.getfilepath(self, context)  
-        PresetPath = str(f'{StrewFolder}preset files\\{formatname}.txt')
-        with open(PresetPath,'w') as PresetFile:
-            PresetFile.write("")  
-        EnumFormat = str(formatname)+","+str(name)+","+str(formatdesc)
-        PresetListPath = f'{StrewFolder}preset files\\presetlist.txt'
-        PresetList=open(PresetListPath,'r').readlines()
-        PresetList.append(EnumFormat+'\n')
-        with open(PresetListPath,'w') as PresetListFile:
-            for preset in PresetList:
-                PresetListFile.write(preset)
-        return{'FINISHED'}
-    def Clone(self, context,id, name, desc):
-        formatname = str(name).replace(" ", "_")
-        formatdesc = str(desc).replace(",", ".")
-        StrewFolder = StrewUi.SetupFolders.getfilepath(self, context)  
-        original = str(f'{StrewFolder}preset files\\{context.scene.StrewPresetDrop.StrewPresetDropdown}.txt')
-        target = str(f'{StrewFolder}preset files\\{formatname}.txt')
-        shutil.copyfile(original,target)
-        EnumFormat = str(formatname)+","+str(name)+","+str(formatdesc)
-        PresetListPath = f'{StrewFolder}preset files\\presetlist.txt'
-        PresetList=open(PresetListPath,'r').readlines()
-        PresetList.append(EnumFormat+'\n')
-        with open(PresetListPath,'w') as PresetListFile:
-            for preset in PresetList:
-                PresetListFile.write(preset)
-        return{'FINISHED'}
-    def Remove(self, context, id):
-        name = context.scene.StrewPresetDrop.StrewPresetDropdown
-        formatname = str(name).replace(" ", "_")
-        StrewFolder = StrewUi.SetupFolders.getfilepath(self, context)
-        PresetPath = str(f'{StrewFolder}preset files\\{formatname}.txt')
-        os.remove(PresetPath)
-        PresetListPath = f'{StrewFolder}preset files\\presetlist.txt'
-        PresetList=open(PresetListPath,'r').readlines()
-        del PresetList[id]
-        with open(PresetListPath,'w') as PresetListFile:
-            for preset in PresetList:
-                PresetListFile.write(preset)
-        return{'FINISHED'}
-    def Rename(self, context, id, oldname, name, desc):
-        formatname = str(name).replace(" ", "_")
-        formatoldname = str(oldname).replace(" ", "_")
-        formatdesc = str(desc).replace(",", ".")
-        StrewFolder = StrewUi.SetupFolders.getfilepath(self, context)
-        PresetPath = f'{StrewFolder}preset files\\{formatoldname}.txt'
-        NewPresetPath = f'{StrewFolder}preset files\\{formatname}.txt'
-        PresetListPath = f'{StrewFolder}preset files\\presetlist.txt'
-        PresetList=open(PresetListPath,'r').readlines()
-        newvalue = str(formatname)+","+str(name)+","+str(formatdesc)+'\n'
-        PresetList[id]=newvalue
-        with open(PresetListPath,'w') as PresetListFile:
-            for preset in PresetList:
-                PresetListFile.write(preset)
-        os.rename(PresetPath, NewPresetPath)
-    def Update(self, context, id):
-        print("nothing here for the moment. come back in a few.")
-        return{'FINISHED'}
-    
 #####################################################################################
-#
-#       OPERATORS TO IMPORT OR EXPORT ASSETSLIST AS LISTS
-#
-##################################################################################### 
 
-class GetAssetList():
-    def Specie(self, context, preset):
-        Species_List = []
-        StrewFolder = str(StrewUi.SetupFolders.getfilepath(self, context))
-        AssetListPath = f'{StrewFolder}preset files\\{preset}.txt'
-        with open(AssetListPath,'r') as AssetListFile:
-            AssetList=AssetListFile.readlines()
-            if AssetList is None:
-                return Species_List
-            for Asset in AssetList:
-                Asset = Asset.strip("\n")
-                path = Asset.split(",")
-                if len(path) == 3:
-                    #Variante = Asset.strip(path[3]).strip(",")
-                    Specie = Asset.strip(path[2]).strip(",")
-                    if Specie not in Species_List:
-                        Species_List.append(Specie)
-                elif len(path) == 2:
-                    if Asset not in Variant_List:
-                        Variant_List.append(Asset)
-                else:
-                    print("there is an invalid item in the list")
-        return Species_List
-    
-    def Variant(self, context, preset):
-        Variant_List = []
-        VariantName_List = []
-        StrewFolder = str(StrewUi.SetupFolders.getfilepath(self, context))
-        AssetListPath = f'{StrewFolder}preset files\\{preset}.txt'
-        with open(AssetListPath,'r') as AssetListFile:
-            AssetList=AssetListFile.readlines()
-            if AssetList is None:
-                return Variant_List
-            for Asset in AssetList:
-                Asset = Asset.strip("\n")
-                path = Asset.split(",")                
-                if len(path) == 3:
-                    #Variant = Asset.strip(path[3]).strip(",")
-                    #Prevents LOD from being added to the list
-                    if Asset not in Variant_List:
-                        Variant_List.append(Asset)
-                        VariantName_List.append(path[2])
-                #handles the custom mesh added to lists
-                elif len(path) == 2:
-                    if Asset not in Variant_List:
-                        Variant_List.append(Asset)
-                        VariantName_List.append(path[1])
-                else:
-                    print("there is an invalid item in the list")
-                    pass
-        return Variant_List, VariantName_List
-    
-    #Not used actualy. maybe later.
-    def Mesh(self, context, preset):
-        asset_list= []
-        StrewFolder = str(StrewUi.SetupFolders.getfilepath(self, context))
-        AssetListPath = f'{StrewFolder}preset files\\{preset}.txt'
-        with open(AssetListPath,'r') as AssetListFile:
-            AssetList=AssetListFile.readlines()
-            if AssetList is None:
-                return asset_list
-            for Asset in AssetList:
-                Asset = Asset.strip("\n")
-                path = Asset.split(",")
-                if len(path) == 3:
-                    Variante = Asset.strip(path[3]).strip(",")
-                    if Variante not in VarianteList:
-                        VarianteList.append(Variante)
-                elif len(path) == 2:
-                    if Asset not in Variant_List:
-                        Variant_List.append(Asset)
-                else:
-                    print("there is an invalid item in the list")
-                    pass
-        return asset_list
+
+class ImportBiome(Operator):
+    bl_idname = "strew.import_biome"
+    bl_label = "Import_biome"
+
+    def execute(self, context):
+        # setup strew
+        # get biome name
+        # import all assets
+        # assign biome
+        # configure biome
+        return {'FINISHED'}
+
+
+class ImportAsset(Operator):
+    bl_idname = "strew.import_assets"
+    bl_label = "import_assets"
+
+    def execute(self, context):
+        strew_collection = StrewFunctions.setup_collections()               # get the main collection
+        biome = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown       # get the selected biome
+        blend_folder = StrewFunctions.get_path(self, context, "blend")      # get the blend folder
+
+        asset_list = StrewFunctions.get_assets_list(self, context, biome)   # get the assets list
+        for asset in asset_list:                                            # import the assets
+            asset_name = asset['name']
+            asset_path = blend_folder + asset['file']
+            StrewFunctions.import_asset(asset_path, asset_name, strew_collection)
+        return {'FINISHED'}
 
 #####################################################################################
 #
 #       MANAGE TERRAINS
 #
 #####################################################################################
+# temporary
+
 
 class Addgrass(Operator):
-    bl_idname = "strew.addgrass"
+    bl_idname = "strew.add_grass"
     bl_label = "add grass"
 
     def execute(self, context):
-        StrewBiomeManager.ApplyGrass.ApplyGeonode(self, context)
+        StrewBiomeManager.apply_geometry_nodes()
         return {'FINISHED'}
+
 
 #####################################################################################
 #
 #       REGISTER AND UNREGISTER
 #
-##################################################################################### 
+#####################################################################################
 
 
-classes=  [
-AddAssetToPreset,
-RemoveAssetFromPreset,
-AddPresetPopup,
-ClonePresetPopup,
-RemovePresetPopup,
-SCENE_OT_source_populate,
-SCENE_OT_list_populate,
-RenamePresetPopup,
-SubListPopup,
-RegisterAsset,
-Addgrass,
+classes = [
+    # --- setup ---
+    Initialise,                     # strew.initialise
+    SetupStrew,                     # strew.setup_strew
+    # --- instance panel ---
+    InstancePreferencesPanel,       # strew.instance_prefs_panel
+    InstanceBiomeCompositor,        # strew.biome_compositor
+    # --- popup box ---
+    AddPresetPopup,                 # strew.add_preset_popup
+    ClonePresetPopup,               # strew.clone_preset_popup
+    RemovePresetPopup,              # strew.remove_preset_popup
+    RenamePresetPopup,              # strew.rename_preset_popup
+    # --- Add & Remove asset ---
+    AddAssetManager,                # strew.add_asset_manager
+    AddAssetView,                   # strew.add_asset_view
+    RemoveAssetManager,             # strew.remove_asset_manager
+    RemoveAssetView,                # strew.remove_asset_view
+    SaveAsset,                      # strew.save_asset
+    # --- ui list updates ---
+    SCENE_OT_list_populate,         # strew.list_populate
+    SCENE_OT_source_populate,       # strew.source_populate
+    # --- import & export ---
+    ImportBiome,                    # strew.import_biome
+    ImportAsset,                    # strew.import_assets
+    # --- Manage terrains ---
+    Addgrass,                       # strew.add_grass
 ]
 
-def register() :
+
+def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-def unregister() :
+
+
+def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)

@@ -1,3 +1,0 @@
-Rename_preset,Rename preset,desc
-New_Preset2,New Preset2,Custom Preset
-New_Presetah,New Presetah,desc

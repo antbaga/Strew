@@ -1,8 +1,0 @@
-Rocks,Variante1
-Rocks,Variante2
-custom.blend,Light
-custom.blend,Light
-custom.blend,Light
-custom.blend,Light
-custom.blend,Cube
-custom.blend,Cube
