@@ -7,7 +7,7 @@ import addon_utils
 
 
 class MainPanel(bpy.types.Panel):
-    bl_label = "Strew-Interface"
+    bl_label = "Strew"
     bl_idname = "VIEW_3D_PT_STREW_Interface"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -17,23 +17,37 @@ class MainPanel(bpy.types.Panel):
     def draw(self, context):
         ui_switch = context.scene.strew_ui_switch
         StrewProperty = context.scene.preset_name_string
+        active_object = bpy.context.active_object
 
         lay = self.layout
         r = lay.row(align=True)
         c = r.column(align=True)
 
+        #####################################################################################
+        #       3D VIEW - BIOME NOT IMPORTED
+        #####################################################################################
+
         if ui_switch.panels == {'General'} and\
                 bpy.context.window.workspace.name != StrewFunctions.strew_compositor_workspace:
-            # Calls the functions here
-            c.operator("strew.import_biome", text="Import biome")
+
+            c.operator("strew.instance_prefs_panel", text="Strew Settings...")
+            c.separator(factor=2.0)
+
             c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
-            # c.operator("strew.createpreset", text="Save as new preset")
-            # c.operator("strew.importassets", text="Import All")
-            # c.operator("strew.addasset", text="Save as asset")
-            # c.operator("strew.removeasset", text="remove from asset")
-            c.operator("strew.setup_strew", text="setup strew")
-            c.operator("strew.instance_prefs_panel", text="Asset Manager")
-            c.operator("strew.biome_compositor", text="Biome Compositor").switcher = 0
+
+            if active_object is not None:
+                if StrewFunctions.terrain_property not in active_object:
+                    c.operator("strew.import_biome", text="Import biome")
+                    c.operator("strew.add_biome_popup", text="Create biome")
+
+
+            else:
+                c.operator("strew.replace_biome", text="Replace biome")
+                c.operator("strew.biome_compositor", text="Biome Compositor").switcher = 0
+
+        #####################################################################################
+        #       BIOME COMPOSITOR
+        #####################################################################################
 
         elif ui_switch.panels == {'Biomes'} or bpy.context.scene.name == StrewFunctions.strew_compositor_scene or\
                 bpy.context.window.workspace.name == StrewFunctions.strew_compositor_workspace:
@@ -50,10 +64,6 @@ class MainPanel(bpy.types.Panel):
             r.separator(factor=2.0)
             c = r.column(align=True)
             c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
-            # c.operator("strew.createpreset",    text="Save as new preset")
-            # c.operator("strew.importassets",    text="Import All")
-            # c.operator("strew.addasset",        text="Save as asset")
-            # c.operator("strew.removeasset",     text="remove from asset")
             c.operator("strew.biome_compositor", text="Exit Biome Compositor").switcher = 1
             c.separator(factor=3.0)
             if StrewProperty.Decorator == {"Trees"}:
@@ -65,6 +75,14 @@ class MainPanel(bpy.types.Panel):
             if StrewProperty.Decorator == {"Rocks"}:
                 for Input in Geonode_Rocks:
                     c.prop(Input, "default_value")
+
+        #####################################################################################
+        #       ASSET CREATOR
+        #####################################################################################
+
+        #####################################################################################
+        #       FALLBACK
+        #####################################################################################
 
         else:
             c.operator("strew.setup_strew", text="setup strew")

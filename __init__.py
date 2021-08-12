@@ -67,9 +67,10 @@ class StrewPreferences(AddonPreferences):
         row = box.row()
         row.label(text='Asset Library :')
         row.prop(context.scene.StrewSourceDrop, "StrewSourceDropdown")
+        row.separator(factor=5.4)
         # row.operator("scene.source_populate",text= "populate")
         row = box.row()
-        row.template_list("SMS_UL_List", "", scene.SMSL, "collection", scene.SMSL, "active_user_index", rows=24)
+        row.template_list("SMS_UL_List", "", scene.SMSL, "collection", scene.SMSL, "active_user_index", rows=25)
 
         #######################################
         #   CENTRAL BUTTONS
@@ -97,28 +98,29 @@ class StrewPreferences(AddonPreferences):
         split_row.scale_x = 33.4
         split_row.separator()
         split_row = row.split()
-        split_row.operator("strew.add_preset_popup", text="New Preset")
+        split_row.operator("strew.add_biome_popup", text="New biome")
 
         row = box.row()
         split_row = row.split()
         split_row.scale_x = 33.4
         split_row.separator()
         split_row = row.split()
-        split_row.operator("strew.remove_preset_popup", text="Remove Preset")
+        split_row.operator("strew.remove_biome_popup", text="Remove biome")
 
         row = box.row()
         split_row = row.split()
         split_row.scale_x = 33.4
         split_row.separator()
         split_row = row.split()
-        split_row.operator("strew.clone_preset_popup", text="Clone Preset")
+        split_row.operator("strew.clone_biome_popup", text="Clone biome")
 
         row = box.row()
         split_row = row.split()
         split_row.scale_x = 33.4
         split_row.separator()
         split_row = row.split()
-        split_row.operator("strew.rename_preset_popup", text="edit Preset")
+        split_row.operator("strew.rename_biome_popup", text="edit biome")
+
 
         row = box.row()
         row.template_list("SMA_UL_List", "", scene.SMAL, "collection", scene.SMAL, "active_user_index", rows=20)
@@ -131,27 +133,23 @@ class StrewPreferences(AddonPreferences):
 #####################################################################################
 
 
-def update_strewpresetdrop(self, context):
-    StrewManOperators.SCENE_OT_list_populate.execute(self, context)
-    return None
-
-
-# recup la liste des préset dans le fichier text
-
-
-preset_list_enum = []
-
-
-def enumfromfile(self, context):
-    global preset_list_enum
-    preset_list_enum = StrewFunctions.get_enum_biomes(self, context)
-    return preset_list_enum
-
-
-# Property de la liste de dropdown
+preset_list_enum = StrewFunctions.preset_list_enum
 
 
 class StrewPresetProperty(PropertyGroup):
+
+    def update_strewpresetdrop(self, context):
+        StrewManOperators.SCENE_OT_list_populate.execute(self, context)
+        return None
+
+    def enumfromfile(self, context):
+        global preset_list_enum
+        preset_list_enum.clear()
+        thumb_list = StrewFunctions.get_enum_biomes(self, context)
+        for i in thumb_list:
+            preset_list_enum.append(i)
+        return preset_list_enum
+
     StrewPresetDropdown: EnumProperty(
         name="",
         description="Select preset",
@@ -178,27 +176,23 @@ class PRESET_UL_List(bpy.types.UIList):
 #####################################################################################
 
 
-def update_sourcedrop(self, context):
-    StrewManOperators.SCENE_OT_source_populate.execute(self, context)
-    return None
-
-
-# recup la liste des préset dans le fichier text
-
-
-asset_list_enumb = []
-
-
-def enumfromblenderlist(self, context):
-    global asset_list_enumb
-    asset_list_enumb = StrewFunctions.get_source_files(self, context)
-    return asset_list_enumb
-
-
-# Property de la liste de dropdown
+sources_list_enum = StrewFunctions.sources_list_enum
 
 
 class StrewSourceProperty(PropertyGroup):
+
+    def update_sourcedrop(self, context):
+        StrewManOperators.SCENE_OT_source_populate.execute(self, context)
+        return None
+
+    def enumfromblenderlist(self, context):
+        global sources_list_enum
+        sources_list_enum.clear()
+        thumb_list = StrewFunctions.get_source_files(self, context)
+        for i in thumb_list:
+            sources_list_enum.append(i)
+        return sources_list_enum
+
     StrewSourceDropdown: EnumProperty(
         name="",
         description="Select source",
@@ -229,10 +223,10 @@ class SRCFILES_UL_List(bpy.types.UIList):
 
 
 class SMAAsset(PropertyGroup):
-    type: EnumProperty(
-        items=(('A', "Option A", ""), ('B', "Option B", ""),)
-    )
-    # val = BoolProperty()
+    description: StringProperty()
+    file: StringProperty()
+    type: StringProperty()
+    category: StringProperty()
 
 
 class SMAList(PropertyGroup):
@@ -246,8 +240,6 @@ class SMA_UL_List(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             layout.prop(item, "name", text="", emboss=False)
-            # layout.prop(item, "val", text="")
-            # layout.prop(item, "type", text="")
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
@@ -260,18 +252,11 @@ class SMA_UL_List(UIList):
 #####################################################################################
 
 
-def splash(self, context):
-    # AFAICT context override does not get to panel
-    bpy.ops.wm.call_panel(
-        {"active_smms_user": self.collection[self.active_user_index]},
-        'INVOKE_DEFAULT',
-        name="OBJECT_PT_variant",
-    )
-    return None
-
-
 class SMSAsset(PropertyGroup):
-    amount = IntProperty()
+    description: StringProperty()
+    file: StringProperty()
+    type: StringProperty()
+    category: StringProperty()
 
 
 class SMSList(PropertyGroup):
@@ -279,7 +264,6 @@ class SMSList(PropertyGroup):
         name="SMSA",
         type=SMSAsset)
     active_user_index: IntProperty(
-        # update=splash
     )
 
 
@@ -288,8 +272,6 @@ class SMS_UL_List(UIList):
         layout.context_pointer_set("active_smms_user", item, )
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             layout.prop(item, "name", text="", emboss=False)
-            # layout.prop(item, "val", text="")
-            # layout.prop(item, "type", text="")
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)

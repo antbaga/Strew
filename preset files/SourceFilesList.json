@@ -1,51 +1,64 @@
 {
-	"This_file":
+	"%STREW%This_file":
 	[
 	{
 		"name": "This file",
-		"identifier": "This_file",
+		"identifier": "%STREW%This_file",
 		"description": "All objects present in this file.",
 		"assets":
 		[
 		]
 	}
 	],
-	"rocks":
+	"%STREW%rocks":
 	[
 		{
 		"name": "rocks",
-		"identifier": "rocks",
+		"identifier": "%STREW%rocks",
 		"description": "All things that are minerals.",
 		"assets":
 		[
 			{
-				"file":"rocks.blend",
-				"collection": "Essence 1",
+				"file":"%STREW%rocks.blend",
+				"type": "Collection",
 				"name":"Variante 1",
-				"description":"less beautiful cube"
+				"description":"less beautiful cube",
+				"category": "rocks",
+				"objects": 
+				[
+					{
+					"LOD_0":"Espece 1_Variante 1_LOD0",
+					"LOD_1":"Espece 1_Variante 1_LOD0",
+					"LOD_2":"Espece 1_Variante 1_LOD0",
+					"LOD_3":"Espece 1_Variante 1_LOD0",
+					"proxy":"Espece 1_Variante 1_LOD0"
+					}
+				]
 			},
 			{
-				"file":"rocks.blend",
-				"collection": "Essence 1",
+				"file":"%STREW%rocks.blend",
+				"type": "Collection",
 				"name":"Variante 2",
-				"description":"less beautiful cube"
+				"description":"even less beautiful cube",
+				"category": "rocks"
 			}
 		]
 	}
 	],
-	"plants":
+	"%STREW%plants":
 	[
 		{
 		"name": "plants",
-		"identifier": "Plants",
+		"identifier": "%STREW%plants",
 		"description": "All things that are vegetables.",
 		"assets":
 		[
 			{				
-				"file":"plants.blend",
-				"collection": "",
+				"file":"%STREW%plants.blend",
+				"type": "Object",
 				"name":"Basilic",
-				"description":"Beautiful basilic"
+				"description":"Beautiful basilic",
+				"category": "grass"
 			}
 
 		]		

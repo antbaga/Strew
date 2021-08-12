@@ -8,9 +8,9 @@ def apply_geometry_nodes(terrain_object):
     biome = bpy.data.objects.new("StrewBiome", Mesh)
     bpy.context.scene.collection.objects.link(biome)
     geometry_node_master = StrewFunctions.geometry_node_master
-    try:
-        terrain_object["Strew_Terrain_Type"]            # checks if object has terrain property
-    except:
+    if StrewFunctions.terrain_property in terrain_object:         # checks if object has terrain property
+        print("object already a terrain. replace current biome?")
+    else:
         modifier = biome.modifiers.new
         strew_terrain = modifier(name='Strew_Terrain', type='NODES')
         strew_biome = bpy.data.node_groups[geometry_node_master].copy()

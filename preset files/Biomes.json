@@ -7,19 +7,17 @@
             "assets": [
                 {
                     "file": "%STREW%rocks.blend",
-                    "collection": "Variante 1",
-                    "name": "Espece 1_Variante 1_LOD0",
-                    "description": "beautiful cube"
-                },
-                {
-                    "file": "%STREW%rocks.blend",
-                    "collection": "Variante 2",
-                    "name": "Espece 1_Variante 2_LOD0",
-                    "description": "less beautiful cube"
+                    "name": "Variante 1",
+                    "type": "Collection",
+                    "description": "less beautiful cube",
+                    "category": "rocks"
                 },
                 {
                     "file": "%STREW%plants.blend",
-                    "name": "Basilic"
+                    "name": "Basilic",
+                    "type": "Object",
+                    "description": "Beautiful basilic",
+                    "category": "grass"
                 }
             ]
         }
@@ -40,13 +38,13 @@
             "assets": [
                 {
                     "file": "%STREW%rocks.blend",
-                    "collection": "Variante 1",
+                    "type": "Collection",
                     "name": "Espece 1_Variante 1_LOD0",
                     "description": "beautiful cube"
                 },
                 {
                     "file": "%STREW%rocks.blend",
-                    "collection": "Variante 2",
+                    "type": "Collection",
                     "name": "Espece 1_Variante 2_LOD0",
                     "description": "less beautiful cube"
                 }

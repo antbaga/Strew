@@ -11,11 +11,15 @@ source_file = "SourceFilesList.json"
 blend_folder = "blend files\\"
 preset_folder = "preset files\\"
 strew_collection_master = 'Strew'
-strew_collection_assets = 'Strew_Assets'
-strew_collection_custom_assets = 'Strew_Custom_Assets'
+strew_collection_assets = 'Strew_Biomes_Assets'
+strew_collection_biomes = 'Strew_Biomes'
 strew_compositor_scene = 'Strew_BiomeCompositor'
 strew_compositor_workspace = 'Strew_Compositor'
 geometry_node_master = "Geometry Nodes.005"
+terrain_property = "Strew_Terrain_Type"
+local_folder_path = "%STREW%"
+preset_list_enum = []
+sources_list_enum = []
 
 #####################################################################################
 #
@@ -45,8 +49,18 @@ def selected_biome(context):
     return biome_name
 
 
-def selected_source(context):
-    source_name = bpy.context.scene.StrewSourceDrop.StrewSourceDropdown
+def selected_source(form):
+    # CALLED FROM:
+    #   AddAssetManager                         (Operator)
+    #   SCENE_OT_source_populate                (Operator)
+
+    if form == "name":
+        source_name = bpy.context.scene.StrewSourceDrop.StrewSourceDropdown
+    elif form == "id":
+        source_name = bpy.context.scene.StrewSourceDrop['StrewSourceDropdown']
+    else:       # Should not happen
+        source_name = bpy.context.scene.StrewSourceDrop.StrewSourceDropdown
+
     return source_name
 
 
@@ -72,15 +86,15 @@ def setup_collections():
     else:                                                                                   # not exist.
         assets_collection = collections[strew_collection_assets]
 
-    if strew_collection_custom_assets not in collections:
-        custom_assets_collection = collections.new(strew_collection_custom_assets)          # look for custom collection
+    if strew_collection_biomes not in collections:
+        custom_assets_collection = collections.new(strew_collection_biomes)          # look for custom collection
         master_collection.children.link(custom_assets_collection)                           # and creates it if it does
     else:                                                                                   # not exist.
-        custom_assets_collection = collections[strew_collection_custom_assets]
+        custom_assets_collection = collections[strew_collection_biomes]
 
     master_collection_layer = bpy.context.view_layer.layer_collection.children[strew_collection_master]
     master_collection_layer.children[strew_collection_assets].exclude = True                      # disable collections
-    master_collection_layer.children[strew_collection_custom_assets].exclude = True               # so user is not bothered
+    master_collection_layer.children[strew_collection_biomes].exclude = True               # so user is not bothered
 
     return assets_collection
 
@@ -183,6 +197,13 @@ def get_source_files(self, context):
 
 
 def get_sources_assets(self, context, source_name):
+    # CALLED FROM:
+    #   AddAssetManager             (Operator)
+    #   SCENE_OT_source_populate    (Operator)
+
+    # RETURNS:
+    # Asset{ "file", "type", "name", "description"}
+
     global biome_file
     assets_list = []
     preset_folder_path = get_path(self, context, 'preset')
@@ -190,14 +211,22 @@ def get_sources_assets(self, context, source_name):
     with open(preset_folder_path + source_file, 'r') as json_file:
         sources = json.load(json_file)
 
-        for data in sources[source_name]:
-            for Asset in data['assets']:
-                assets_list.append(Asset)
+        if source_name in sources:
+            for data in sources[source_name]:
+                for Asset in data['assets']:
+                    assets_list.append(Asset)
+        else:
+            print("STREW_WARNING: Could not find " + source_name + " in sources file:\n", sources)
 
     return assets_list
 
 
 def get_assets_list(self, context, biome_name):
+    # CALLED FROM:
+    #   SCENE_OT_list_populate      (Operator)
+    #   ImportBiome                 (Operator)
+    #   ImportAsset                 (Operator)
+
     global biome_file
     assets_list = []
     preset_folder_path = get_path(self, context, 'preset')
@@ -213,6 +242,8 @@ def get_assets_list(self, context, biome_name):
 
 
 def get_assets_enum(self, context, biome_name):
+    # CALLED FROM:
+    #   StrewProps.enum                 (function for EnumProperty)
     global biome_file
     assets_enum = []
     preset_folder_path = get_path(self, context, 'preset')
@@ -328,8 +359,12 @@ def rename_biome(self, context, initial_name, new_name, new_description):
 #####################################################################################
 
 
-def add_asset(self, context, biome_name, asset_file, asset_name):
-    global biome_file  # get the name of file
+def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, asset_description, asset_category):
+    # CALLED FROM:
+    #   AddAssetManager                 (Operator)
+    #   AddAssetView                    (Operator)
+
+    global biome_file                                                   # get the name of file
     preset_folder_path = get_path(self, context, 'preset')              # get the path of file
 
     if '"' in asset_name:                                                # prevents " in the file
@@ -342,7 +377,11 @@ def add_asset(self, context, biome_name, asset_file, asset_name):
     for data in biomes[biome_name]:                                     # add the asset to the list
         data['assets'].append({
             "file": asset_file,
-            "name": asset_name
+            "name": asset_name,
+            "type": asset_type,
+            "description": asset_description,
+            "category": asset_category
+
         })
     with open(preset_folder_path + biome_file, 'w') as json_file:       # rewrite the file
         json.dump(biomes, json_file, indent=4)
@@ -380,6 +419,8 @@ def remove_asset(self, context, biome_name, asset_name, asset_file):
 
 
 def export_asset(self, context):
+    # CALLED FROM:
+    #   SaveAsset   (Operator)
     obj_name = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index].name  # Get the asset name
     obj = {bpy.context.scene.objects[obj_name]}                                                  # get the actual object
     path = StrewFunctions.get_path(self, context, 'blend')                                       # find the blend target
@@ -404,42 +445,24 @@ def set_active_collection(parent_collection, target_collection):
     return
 
 
-def import_asset(self, context, asset_path, asset_name, target_collection):
+def import_asset(self, context, asset_path, asset_name,asset_type, target_collection):
+    # CALLED FROM:
+    #   ImportBiome (Operator)
+    #   ImportAsset (Operator)
 
-    if asset_name in target_collection.all_objects:        # check if object exists
+    if asset_name in target_collection.all_objects:                     # check if object exists
         print("Object with this name already exists.")
         return
     else:                                                               # select target collection
         if '%STREW%' in asset_path:                                     # get real path of asset
             asset_path = asset_path.replace('%STREW%', get_path(self, context, 'blend'))
-        # might want to always do it and assume all assets are in the same folder
 
         set_active_collection(bpy.context.view_layer.layer_collection, target_collection)
 
         bpy.ops.wm.append(                                              # import asset
-            filepath=os.path.join(asset_path + "\\Object\\" + asset_name),
-            directory=os.path.join(asset_path + "\\Object\\"),
+            filepath=os.path.join(asset_path + f"\\{asset_type}\\" + asset_name),
+            directory=os.path.join(asset_path + f"\\{asset_type}\\"),
             filename=asset_name
-        )
-
-
-def import_collection(collection_path, parent_collection, collection_name, strew_collection):
-    collections = bpy.data.collections                                  # just for clarity of code
-    asset_collection = setup_collections()                              # ensure all collections are here
-
-    if parent_collection not in collections[strew_collection.name].children:
-        new_collection = collections.new(parent_collection)             # not sure why i do this
-        asset_collection.childrend.link(new_collection)                 # creates a new collection in asset collection
-    else:
-        new_collection = collections[parent_collection]
-
-    if collection_name in new_collection.children:                      # ensure no duplicates
-        print("collection with this name already exists")               # might not be the best way
-    else:
-        bpy.ops.wm.append(
-            filepath=os.path.join(collection_path + "\\Collection\\" + collection_name),
-            directory=os.path.join(collection_path + "\\Collection\\"),
-            filename=CollName
         )
 
 
