@@ -94,7 +94,6 @@ def setup_collections():
 
     master_collection_layer = bpy.context.view_layer.layer_collection.children[strew_collection_master]
     master_collection_layer.children[strew_collection_assets].exclude = True                      # disable collections
-    master_collection_layer.children[strew_collection_biomes].exclude = True               # so user is not bothered
 
     return assets_collection
 
@@ -198,11 +197,10 @@ def get_source_files(self, context):
 
 def get_sources_assets(self, context, source_name):
     # CALLED FROM:
-    #   AddAssetManager             (Operator)
     #   SCENE_OT_source_populate    (Operator)
 
     # RETURNS:
-    # Asset{ "file", "type", "name", "description"}
+    # Asset{ "file", "type", "name", "description", "category", "objects"}
 
     global biome_file
     assets_list = []
@@ -359,7 +357,7 @@ def rename_biome(self, context, initial_name, new_name, new_description):
 #####################################################################################
 
 
-def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, asset_description, asset_category):
+def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, asset_description, asset_category, asset_objects):
     # CALLED FROM:
     #   AddAssetManager                 (Operator)
     #   AddAssetView                    (Operator)
@@ -380,8 +378,8 @@ def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, ass
             "name": asset_name,
             "type": asset_type,
             "description": asset_description,
-            "category": asset_category
-
+            "category": asset_category,
+            "objects": json.loads(asset_objects.replace("'", "\""))
         })
     with open(preset_folder_path + biome_file, 'w') as json_file:       # rewrite the file
         json.dump(biomes, json_file, indent=4)
@@ -445,10 +443,11 @@ def set_active_collection(parent_collection, target_collection):
     return
 
 
-def import_asset(self, context, asset_path, asset_name,asset_type, target_collection):
+def import_asset(self, context, asset_path, asset_name, asset_type, target_collection):
     # CALLED FROM:
-    #   ImportBiome (Operator)
-    #   ImportAsset (Operator)
+    #   ImportBiome                 (Operator)
+    #   ImportAsset                 (Operator)
+    #   setup_biome_collection      (Function)
 
     if asset_name in target_collection.all_objects:                     # check if object exists
         print("Object with this name already exists.")

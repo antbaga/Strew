@@ -230,12 +230,12 @@ class AddAssetManager(Operator):
         biome_name = SFunc.selected_biome(context)
 
         # TODO: add a prompt asking user if he wants to save it locally or not
-
         SFunc.add_asset(self, context, biome_name, asset['file'],
                                                    asset['name'],
                                                    asset['type'],
                                                    asset['description'],
-                                                   asset['category'])
+                                                   asset['category'],
+                                                   asset['objects'])
         SCENE_OT_list_populate.execute(self, context)
         return {'FINISHED'}
 
@@ -258,9 +258,10 @@ class AddAssetView(Operator):
             for obj in bpy.context.selected_objects:
                 SFunc.add_asset(self, context, biome_name, file_name,
                                                            obj.name,
-                                                           "asset",
+                                                           "Object",
                                                            "Custom asset",
-                                                           "grass")
+                                                           "grass",
+                                                            "{}")
             return {'FINISHED'}
         else:
             print("can't save as asset from temporary blend file yet. please save your file")
@@ -326,6 +327,7 @@ class SCENE_OT_list_populate(Operator):
             item.file = Asset['file']
             item.type = Asset['type']
             item.category = Asset['category']
+            item.objects = str(Asset['objects'])
         return {'FINISHED'}
 
 
@@ -349,8 +351,9 @@ class SCENE_OT_source_populate(Operator):
                 item.name = Asset.name
                 item.file = blend
                 item.description = "Custom Asset"
-                item.type = "asset"
+                item.type = "Object"
                 item.category = "grass"     # TODO: ask the user what category it is
+                item.objects = "{}"
             return {'FINISHED'}
         else:
             AssetList = SFunc.get_sources_assets(self, context, biome)
@@ -361,6 +364,7 @@ class SCENE_OT_source_populate(Operator):
                 item.file = Asset['file']
                 item.type = Asset['type']
                 item.category = Asset['category']
+                item.objects = str(Asset['objects'])
             return {'FINISHED'}
 
 #####################################################################################
@@ -387,15 +391,14 @@ class ImportBiome(Operator):
 
         master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = False           # enable collections
-        master_collection_layer.children[SFunc.strew_collection_biomes].exclude = False    # to import assets
 
-        for asset in asset_list:                                                            # import assets
-            SFunc.import_asset(self, context, asset['file'], asset['name'], asset['type'], strew_collection)
-        strew_biome = StrewBiomeFunctions.apply_geometry_nodes(terrain_object)              # assign biome
-        StrewBiomeFunctions.assign_collection(strew_biome, strew_collection, "rocks")       # configure biome
+        biome_node = StrewBiomeFunctions.apply_geometry_nodes(terrain_object)  # assign biome
+
+        StrewBiomeFunctions.setup_biome_collection(self, context, asset_list, selected_biome, strew_collection, biome_node)
+
+        # StrewBiomeFunctions.assign_collection(strew_biome, strew_collection, "rocks")       # configure biome
         """YOU WILL NEED TO CHANGE THE ROCKS FOR SOMETHING MODULAR"""
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = True            # disable collections
-        master_collection_layer.children[SFunc.strew_collection_biomes].exclude = True     # so user is not bothered
 
         return {'FINISHED'}
 
@@ -413,7 +416,7 @@ class ImportAsset(Operator):
         layer_collection.children[SFunc.strew_collection_assets].exclude = False           # enable collections
 
         asset_list = SFunc.get_assets_list(self, context, biome)                            # get the assets list
-
+        SFunc.setup_biome_collection(self, context, asset_list)
         for asset in asset_list:                                                            # import the assets
             #   IF type = Object
             # check if category is present in thumblist

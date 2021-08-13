@@ -227,6 +227,7 @@ class SMAAsset(PropertyGroup):
     file: StringProperty()
     type: StringProperty()
     category: StringProperty()
+    objects: StringProperty()
 
 
 class SMAList(PropertyGroup):
@@ -257,6 +258,7 @@ class SMSAsset(PropertyGroup):
     file: StringProperty()
     type: StringProperty()
     category: StringProperty()
+    objects: StringProperty()
 
 
 class SMSList(PropertyGroup):
