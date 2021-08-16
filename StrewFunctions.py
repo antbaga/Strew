@@ -16,7 +16,7 @@ strew_collection_biomes = 'Strew_Biomes'
 strew_compositor_scene = 'Strew_BiomeCompositor'
 strew_compositor_workspace = 'Strew_Compositor'
 geometry_node_master = "Geometry Nodes.005"
-terrain_property = "Strew_Terrain_Type"
+terrain_property = "Strew_Terrain_Name"
 local_folder_path = "%STREW%"
 preset_list_enum = []
 sources_list_enum = []
@@ -361,17 +361,20 @@ def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, ass
     # CALLED FROM:
     #   AddAssetManager                 (Operator)
     #   AddAssetView                    (Operator)
+    #   SaveAsset                       (Operator)
 
-    global biome_file                                                   # get the name of file
     preset_folder_path = get_path(self, context, 'preset')              # get the path of file
 
     if '"' in asset_name:                                                # prevents " in the file
         print('Please, ensure there is no " in the name of the asset.')  # as it will cause problems
         pass
-
-    with open(preset_folder_path + biome_file, 'r') as json_file:       # Read the biomes file to build list
-        biomes = json.load(json_file)
-
+    if "save_asset_in_file" in self.name:
+        with open(preset_folder_path + source_file, 'r') as json_file:       # Read the biomes file to build list
+            biomes = json.load(json_file)
+    else:
+        with open(preset_folder_path + biome_file, 'r') as json_file:       # Read the biomes file to build list
+            biomes = json.load(json_file)
+    print(self.name)
     for data in biomes[biome_name]:                                     # add the asset to the list
         data['assets'].append({
             "file": asset_file,
@@ -381,8 +384,13 @@ def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, ass
             "category": asset_category,
             "objects": json.loads(asset_objects.replace("'", "\""))
         })
-    with open(preset_folder_path + biome_file, 'w') as json_file:       # rewrite the file
-        json.dump(biomes, json_file, indent=4)
+
+    if "save_asset_in_file" in self.name:
+        with open(preset_folder_path + source_file, 'w') as json_file:       # rewrite the file
+            json.dump(biomes, json_file, indent=4)
+    else:
+        with open(preset_folder_path + biome_file, 'w') as json_file:  # rewrite the file
+            json.dump(biomes, json_file, indent=4)
 
 
 def remove_asset_id(self, context, biome_name, asset_id):
@@ -419,9 +427,10 @@ def remove_asset(self, context, biome_name, asset_name, asset_file):
 def export_asset(self, context):
     # CALLED FROM:
     #   SaveAsset   (Operator)
+
     obj_name = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index].name  # Get the asset name
     obj = {bpy.context.scene.objects[obj_name]}                                                  # get the actual object
-    path = StrewFunctions.get_path(self, context, 'blend')                                       # find the blend target
+    path = get_path(self, context, 'blend')                                                      # find the blend target
     bpy.data.libraries.write(f'{path}custom.blend', obj, fake_user=True)                         # export to blend
 
 

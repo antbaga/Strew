@@ -102,7 +102,9 @@ class InstanceBiomeCompositor(Operator):
         strew_workspace = SFunc.strew_compositor_workspace
         strew_scene = SFunc.strew_compositor_scene
 
+
         if self.switcher == 0:
+            StrewBiomeFunctions.replace_biome_creator(SFunc.selected_biome(context), "in")
             current_scene = bpy.context.scene.name
             current_workspace = bpy.context.workspace.name
             bpy.context.window.scene = bpy.data.scenes[strew_scene]
@@ -114,6 +116,7 @@ class InstanceBiomeCompositor(Operator):
             return {'FINISHED'}
 
         elif self.switcher == 1:
+            StrewBiomeFunctions.replace_biome_creator(SFunc.selected_biome(context), "out")
             bpy.context.window.scene = bpy.data.scenes[self.current_scene]
             bpy.context.window.workspace = bpy.data.workspaces[self.current_workspace]
             ui_switch = context.scene.strew_ui_switch
@@ -230,12 +233,13 @@ class AddAssetManager(Operator):
         biome_name = SFunc.selected_biome(context)
 
         # TODO: add a prompt asking user if he wants to save it locally or not
-        SFunc.add_asset(self, context, biome_name, asset['file'],
-                                                   asset['name'],
-                                                   asset['type'],
-                                                   asset['description'],
-                                                   asset['category'],
-                                                   asset['objects'])
+        SFunc.add_asset(self, context, biome_name,
+                        asset['file'],
+                        asset['name'],
+                        asset['type'],
+                        asset['description'],
+                        asset['category'],
+                        asset['objects'])
         SCENE_OT_list_populate.execute(self, context)
         return {'FINISHED'}
 
@@ -302,7 +306,19 @@ class SaveAsset(Operator):
 
     def execute(self, context):
         SFunc.export_asset(self, context)
-        # TODO: ADD IT TO THE JSON FILES
+
+        asset = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index]
+
+        source_name = "%STREW%custom"
+
+        SFunc.add_asset(self, context, source_name,
+                        source_name+".blend",
+                        asset['name'],
+                        asset['type'],
+                        asset['description'],
+                        asset['category'],
+                        asset['objects'])
+        SCENE_OT_list_populate.execute(self, context)
         return{'FINISHED'}
 
 #####################################################################################
@@ -389,15 +405,14 @@ class ImportBiome(Operator):
         selected_biome = SFunc.selected_biome(context)                     # get biome name
         asset_list = SFunc.get_assets_list(self, context, selected_biome)  # get asset list
 
+        StrewProps.imported_biome_list(selected_biome)                     # add biome to imported biomes list
         master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = False           # enable collections
 
-        biome_node = StrewBiomeFunctions.apply_geometry_nodes(terrain_object)  # assign biome
+        biome_node = StrewBiomeFunctions.apply_geometry_nodes(terrain_object, selected_biome)  # assign biome
 
         StrewBiomeFunctions.setup_biome_collection(self, context, asset_list, selected_biome, strew_collection, biome_node)
 
-        # StrewBiomeFunctions.assign_collection(strew_biome, strew_collection, "rocks")       # configure biome
-        """YOU WILL NEED TO CHANGE THE ROCKS FOR SOMETHING MODULAR"""
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = True            # disable collections
 
         return {'FINISHED'}
@@ -442,6 +457,7 @@ class ImportAsset(Operator):
 
         return {'FINISHED'}
 
+
 #####################################################################################
 #
 #       MANAGE TERRAINS
@@ -452,6 +468,22 @@ class ImportAsset(Operator):
 class ReplaceBiome(Operator):
     bl_idname = "strew.replace_biome"
     bl_label = "replace biome"
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class UpdateBiome(Operator):
+    bl_idname = "strew.update_biome"
+    bl_label = "update biome"
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class RemoveBiome(Operator):
+    bl_idname = "strew.remove_biome"
+    bl_label = "remove biome"
 
     def execute(self, context):
         return {'FINISHED'}
@@ -472,10 +504,10 @@ classes = [
     InstancePreferencesPanel,       # strew.instance_prefs_panel
     InstanceBiomeCompositor,        # strew.biome_compositor
     # --- popup box ---
-    AddBiomePopup,                 # strew.add_preset_popup
-    CloneBiomePopup,               # strew.clone_preset_popup
-    RemoveBiomePopup,              # strew.remove_preset_popup
-    RenameBiomePopup,              # strew.rename_preset_popup
+    AddBiomePopup,                  # strew.add_preset_popup
+    CloneBiomePopup,                # strew.clone_preset_popup
+    RemoveBiomePopup,               # strew.remove_preset_popup
+    RenameBiomePopup,               # strew.rename_preset_popup
     # --- Add & Remove asset ---
     AddAssetManager,                # strew.add_asset_manager
     AddAssetView,                   # strew.add_asset_view
@@ -490,6 +522,8 @@ classes = [
     ImportAsset,                    # strew.import_assets
     # --- Manage terrains ---
     ReplaceBiome,                   # strew.replace_biome
+    UpdateBiome,                    # strew.update_biome
+    RemoveBiome,                    # strew.remove_biome
 ]
 
 

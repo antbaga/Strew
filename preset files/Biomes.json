@@ -20,13 +20,27 @@
                     }
                 },
                 {
-                    "file": "%STREW%plants.blend",
-                    "name": "Basilic",
+                    "file": "%STREW%rocks.blend",
+                    "name": "Variante 2",
+                    "type": "Collection",
+                    "description": "even less beautiful cube",
+                    "category": "rocks",
+                    "objects": {
+                        "LOD_0": "Espece 1_Variante 2_LOD0",
+                        "LOD_1": "Espece 1_Variante 2_LOD0",
+                        "LOD_2": "Espece 1_Variante 2_LOD0",
+                        "LOD_3": "Espece 1_Variante 2_LOD0",
+                        "PROXY": "Espece 1_Variante 2_LOD0"
+                    }
+                },
+                {
+                    "file": "%STREW%custom.blend",
+                    "name": "Hollow cube",
                     "type": "Object",
-                    "description": "Beautiful basilic",
+                    "description": "Custom Asset",
                     "category": "grass",
                     "objects": {}
-                }                
+                }
             ]
         }
     ],
@@ -35,7 +49,16 @@
             "name": "Biome 03",
             "identifier": "Biome 03",
             "description": "Custom Preset",
-            "assets": []
+            "assets": [
+                {
+                    "file": "%STREW%plants.blend",
+                    "name": "Basilic",
+                    "type": "Object",
+                    "description": "Beautiful basilic",
+                    "category": "grass",
+                    "objects": {}
+                }
+            ]
         }
     ],
     "Biome B": [

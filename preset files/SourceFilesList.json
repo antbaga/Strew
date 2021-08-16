@@ -1,76 +1,81 @@
 {
-	"%STREW%This_file":
-	[
-	{
-		"name": "This file",
-		"identifier": "%STREW%This_file",
-		"description": "All objects present in this file.",
-		"assets":
-		[
-		]
-	}
-	],
-	"%STREW%rocks":
-	[
-		{
-		"name": "rocks",
-		"identifier": "%STREW%rocks",
-		"description": "All things that are minerals.",
-		"assets":
-		[
-			{
-				"file":"%STREW%rocks.blend",
-				"type": "Collection",
-				"name":"Variante 1",
-				"description":"less beautiful cube",
-				"category": "rocks",
-				"objects":
-					{
-					"LOD_0":"Espece 1_Variante 1_LOD0",
-					"LOD_1":"Espece 1_Variante 1_LOD0",
-					"LOD_2":"Espece 1_Variante 1_LOD0",
-					"LOD_3":"Espece 1_Variante 1_LOD0",
-					"PROXY":"Espece 1_Variante 1_LOD0"
-					}
-			},
-			{
-				"file":"%STREW%rocks.blend",
-				"type": "Collection",
-				"name":"Variante 2",
-				"description":"even less beautiful cube",
-				"category": "rocks",
-				"objects": 
-					{
-					"LOD_0":"Espece 1_Variante 2_LOD0",
-					"LOD_1":"Espece 1_Variante 2_LOD0",
-					"LOD_2":"Espece 1_Variante 2_LOD0",
-					"LOD_3":"Espece 1_Variante 2_LOD0",
-					"PROXY":"Espece 1_Variante 2_LOD0"
-					}
-				
-			}
-		]
-	}
-	],
-	"%STREW%plants":
-	[
-		{
-		"name": "plants",
-		"identifier": "%STREW%plants",
-		"description": "All things that are vegetables.",
-		"assets":
-		[
-			{				
-				"file":"%STREW%plants.blend",
-				"type": "Object",
-				"name":"Basilic",
-				"description":"Beautiful basilic",
-				"category": "grass",
-				"objects": {}
-			}
-
-		]		
-	
-		}
-	]
+    "%STREW%This_file": [
+        {
+            "name": "This file",
+            "identifier": "%STREW%This_file",
+            "description": "All objects present in this file.",
+            "assets": []
+        }
+    ],
+    "%STREW%custom": [
+        {
+            "name": "custom",
+            "identifier": "%STREW%custom",
+            "description": "Custom assets made by user.",
+            "assets": [
+                {
+                    "file": "%STREW%custom.blend",
+                    "name": "Hollow cube",
+                    "type": "Object",
+                    "description": "Custom Asset",
+                    "category": "grass",
+                    "objects": {}
+                }
+            ]
+        }
+    ],
+    "%STREW%rocks": [
+        {
+            "name": "rocks",
+            "identifier": "%STREW%rocks",
+            "description": "All things that are minerals.",
+            "assets": [
+                {
+                    "file": "%STREW%rocks.blend",
+                    "type": "Collection",
+                    "name": "Variante 1",
+                    "description": "less beautiful cube",
+                    "category": "rocks",
+                    "objects": {
+                        "LOD_0": "Espece 1_Variante 1_LOD0",
+                        "LOD_1": "Espece 1_Variante 1_LOD0",
+                        "LOD_2": "Espece 1_Variante 1_LOD0",
+                        "LOD_3": "Espece 1_Variante 1_LOD0",
+                        "PROXY": "Espece 1_Variante 1_LOD0"
+                    }
+                },
+                {
+                    "file": "%STREW%rocks.blend",
+                    "type": "Collection",
+                    "name": "Variante 2",
+                    "description": "even less beautiful cube",
+                    "category": "rocks",
+                    "objects": {
+                        "LOD_0": "Espece 1_Variante 2_LOD0",
+                        "LOD_1": "Espece 1_Variante 2_LOD0",
+                        "LOD_2": "Espece 1_Variante 2_LOD0",
+                        "LOD_3": "Espece 1_Variante 2_LOD0",
+                        "PROXY": "Espece 1_Variante 2_LOD0"
+                    }
+                }
+            ]
+        }
+    ],
+    "%STREW%plants": [
+        {
+            "name": "plants",
+            "identifier": "%STREW%plants",
+            "description": "All things that are vegetables.",
+            "assets": [
+                {
+                    "file": "%STREW%plants.blend",
+                    "type": "Object",
+                    "name": "Basilic",
+                    "description": "Beautiful basilic",
+                    "category": "grass",
+                    "objects": {}
+                }
+            ]
+        }
+    ]
 }
