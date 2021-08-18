@@ -312,7 +312,7 @@ class SaveAsset(Operator):
         source_name = "%STREW%custom"
 
         SFunc.add_asset(self, context, source_name,
-                        source_name+".blend",
+                        "%CUSTOM%"+asset['name']+".blend",
                         asset['name'],
                         asset['type'],
                         asset['description'],

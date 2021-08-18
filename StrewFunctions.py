@@ -10,6 +10,7 @@ preset_file = "Biomes.json"
 source_file = "SourceFilesList.json"
 blend_folder = "blend files\\"
 preset_folder = "preset files\\"
+custom_folder = "custom assets\\"
 strew_collection_master = 'Strew'
 strew_collection_assets = 'Strew_Biomes_Assets'
 strew_collection_biomes = 'Strew_Biomes'
@@ -42,6 +43,8 @@ def get_path(self, context, path):
         return filepath
     if path == 'preset_file':
         return presets + preset_file
+    if path == 'custom_file':
+        return filepath + custom_folder
 
 
 def selected_biome(context):
@@ -428,10 +431,11 @@ def export_asset(self, context):
     # CALLED FROM:
     #   SaveAsset   (Operator)
 
-    obj_name = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index].name  # Get the asset name
-    obj = {bpy.context.scene.objects[obj_name]}                                                  # get the actual object
-    path = get_path(self, context, 'blend')                                                      # find the blend target
-    bpy.data.libraries.write(f'{path}custom.blend', obj, fake_user=True)                         # export to blend
+    asset_name = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index].name  # Get the asset name
+    asset = {bpy.context.scene.objects[asset_name]}                                                  # get the actual object
+    path = get_path(self, context, 'custom_file')                                                      # find the blend target
+
+    bpy.data.libraries.write(f'{path}{asset_name}.blend', asset, fake_user=True)                         # export to blend
 
 
 #####################################################################################
@@ -464,6 +468,8 @@ def import_asset(self, context, asset_path, asset_name, asset_type, target_colle
     else:                                                               # select target collection
         if '%STREW%' in asset_path:                                     # get real path of asset
             asset_path = asset_path.replace('%STREW%', get_path(self, context, 'blend'))
+        elif '%CUSTOM%' in asset_path:                                     # get real path of asset
+            asset_path = asset_path.replace('%CUSTOM%', get_path(self, context, 'custom_file'))
 
         set_active_collection(bpy.context.view_layer.layer_collection, target_collection)
 

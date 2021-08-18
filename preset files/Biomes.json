@@ -7,20 +7,6 @@
             "assets": [
                 {
                     "file": "%STREW%rocks.blend",
-                    "name": "Variante 1",
-                    "type": "Collection",
-                    "description": "less beautiful cube",
-                    "category": "rocks",
-                    "objects": {
-                        "LOD_0": "Espece 1_Variante 1_LOD0",
-                        "LOD_1": "Espece 1_Variante 1_LOD0",
-                        "LOD_2": "Espece 1_Variante 1_LOD0",
-                        "LOD_3": "Espece 1_Variante 1_LOD0",
-                        "PROXY": "Espece 1_Variante 1_LOD0"
-                    }
-                },
-                {
-                    "file": "%STREW%rocks.blend",
                     "name": "Variante 2",
                     "type": "Collection",
                     "description": "even less beautiful cube",
@@ -34,8 +20,22 @@
                     }
                 },
                 {
-                    "file": "%STREW%custom.blend",
-                    "name": "Hollow cube",
+                    "file": "%STREW%rocks.blend",
+                    "name": "Variante 1",
+                    "type": "Collection",
+                    "description": "less beautiful cube",
+                    "category": "rocks",
+                    "objects": {
+                        "LOD_0": "Espece 1_Variante 1_LOD0",
+                        "LOD_1": "Espece 1_Variante 1_LOD0",
+                        "LOD_2": "Espece 1_Variante 1_LOD0",
+                        "LOD_3": "Espece 1_Variante 1_LOD0",
+                        "PROXY": "Espece 1_Variante 1_LOD0"
+                    }
+                },
+                {
+                    "file": "%CUSTOM%Cube.blend",
+                    "name": "Cube",
                     "type": "Object",
                     "description": "Custom Asset",
                     "category": "grass",

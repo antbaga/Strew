@@ -14,8 +14,8 @@
             "description": "Custom assets made by user.",
             "assets": [
                 {
-                    "file": "%STREW%custom.blend",
-                    "name": "Hollow cube",
+                    "file": "%CUSTOM%Cube.blend",
+                    "name": "Cube",
                     "type": "Object",
                     "description": "Custom Asset",
                     "category": "grass",
