@@ -74,7 +74,7 @@ class MainPanel(bpy.types.Panel):
             c.prop(StrewProperty, "AssetList")
             r.separator(factor=2.0)
             c = r.column(align=True)
-            c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
+            c.prop(context.scene.StrewImportedBiomes, "ImportedBiomes")
 
             c.operator("strew.biome_compositor", text="Exit Biome Compositor").switcher = 1
 

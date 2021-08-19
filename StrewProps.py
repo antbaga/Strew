@@ -2,7 +2,7 @@ import bpy
 import os
 from bpy.types import Operator, AddonPreferences, PropertyGroup, UIList, Panel
 from bpy.props import StringProperty, IntProperty, EnumProperty, PointerProperty, CollectionProperty, BoolProperty
-from . import __init__, StrewUi, StrewFunctions, StrewManOperators
+from . import __init__, StrewUi, StrewFunctions, StrewManOperators, StrewBiomeFunctions
 import addon_utils
 
 asset_list_enum = []
@@ -11,7 +11,7 @@ old_preset = ""
 
 #####################################################################################
 #
-#       DROPDOWN MENU OF BIOME
+#       DROPDOWNS
 #
 #####################################################################################
 
@@ -40,24 +40,6 @@ class StrewPresetProperty(PropertyGroup):
         update=update_strewpresetdrop)
 
 
-class PRESET_UL_List(bpy.types.UIList):
-
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        custom_icon = 'OBJECT_DATAMODE'
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.label(text=item.name, icon=custom_icon)
-        elif self.layout_type in {'GRID'}:
-            layout.alignment = 'CENTER'
-            layout.label(text="", icon=User)
-
-
-#####################################################################################
-#
-#       DROPDOWN MENU OF SOURCES FILES
-#
-#####################################################################################
-
-
 sources_list_enum = StrewFunctions.sources_list_enum
 
 
@@ -83,6 +65,48 @@ class StrewSourceProperty(PropertyGroup):
         default=0)
 
 
+imported_biomes_enum = StrewFunctions.imported_list_enum
+
+
+class StrewImportedBiomes(PropertyGroup):
+
+    def update_imported_biomes(self, context):
+        StrewBiomeFunctions.switch_active_biome(self.ImportedBiomes)   # update biome
+        return None
+
+    def get_imported_biomes(self, context):
+        global preset_list_enum
+        preset_list_enum.clear()
+        thumb_list = StrewBiomeFunctions.get_imported_biomes_list()    # get list of imported biomes
+        for i in thumb_list:
+            preset_list_enum.append(i)
+        return preset_list_enum
+
+    ImportedBiomes: EnumProperty(
+        name="",
+        description="Select biome",
+        items=get_imported_biomes,
+        update=update_imported_biomes)
+
+
+#####################################################################################
+#
+#       LISTS
+#
+#####################################################################################
+
+
+class PRESET_UL_List(bpy.types.UIList):
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        custom_icon = 'OBJECT_DATAMODE'
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.label(text=item.name, icon=custom_icon)
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon=User)
+
+
 class SRCFILES_UL_List(bpy.types.UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -94,9 +118,28 @@ class SRCFILES_UL_List(bpy.types.UIList):
             layout.label(text="", icon=User)
 
 
+class SMA_UL_List(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.prop(item, "name", text="", emboss=False)
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
+
+
+class SMS_UL_List(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        layout.context_pointer_set("active_smms_user", item, )
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.prop(item, "name", text="", emboss=False)
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
+
+
 #####################################################################################
 #
-#       BIOME LISTS FOR BIOME MANAGER
+#       LISTS PROPS
 #
 #####################################################################################
 
@@ -116,22 +159,6 @@ class SMAList(PropertyGroup):
     active_user_index: IntProperty()
 
 
-class SMA_UL_List(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.prop(item, "name", text="", emboss=False)
-        elif self.layout_type in {'GRID'}:
-            layout.alignment = 'CENTER'
-            layout.label(text="", icon_value=icon)
-
-
-#####################################################################################
-#
-#       BIOME LISTS FOR SOURCE MANAGER
-#
-#####################################################################################
-
-
 class SMSAsset(PropertyGroup):
     description: StringProperty()
     file: StringProperty()
@@ -146,16 +173,6 @@ class SMSList(PropertyGroup):
         type=SMSAsset)
     active_user_index: IntProperty(
     )
-
-
-class SMS_UL_List(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        layout.context_pointer_set("active_smms_user", item, )
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.prop(item, "name", text="", emboss=False)
-        elif self.layout_type in {'GRID'}:
-            layout.alignment = 'CENTER'
-            layout.label(text="", icon_value=icon)
 
 
 #####################################################################################
@@ -222,20 +239,6 @@ class PresetNameString(PropertyGroup):
     )
 
 
-def imported_biome_list(biome_name):
-
-    biome_list = [biome_name]
-
-    if bpy.context.scene.get('Strew_Imported_Biomes') is not None:
-        for biome in bpy.context.scene.get('Strew_Imported_Biomes'):
-            if biome not in biome_list:
-                biome_list.append(biome)
-            else:
-                return "already imported"
-
-    bpy.context.scene["Strew_Imported_Biomes"] = biome_list
-
-
 #####################################################################################
 #
 #       SAVE ASSET PROPS
@@ -292,20 +295,20 @@ class SaveAsset(PropertyGroup):
 
 
 classes = [
-    # --- Dropdown menu of biome ---
+    # --- Dropdowns ---
     StrewPresetProperty,
-    PRESET_UL_List,
-    # --- Dropdown menu of biome ---
     StrewSourceProperty,
+    StrewImportedBiomes,
+    # --- lists ---
+    PRESET_UL_List,
     SRCFILES_UL_List,
-    # --- Biome list for manager ---
+    SMA_UL_List,
+    SMS_UL_List,
+    # --- ui lists ---
     SMAAsset,
     SMAList,
-    SMA_UL_List,
-    # --- Sources list for manager ---
     SMSAsset,
     SMSList,
-    SMS_UL_List,
     # --- Properties ---
     PresetNameString,
     UiSwitch,
@@ -321,6 +324,7 @@ def register():
     bpy.types.Scene.strew_ui_switch = bpy.props.PointerProperty(type=UiSwitch)
     bpy.types.Scene.StrewPresetDrop = PointerProperty(type=StrewPresetProperty)
     bpy.types.Scene.StrewSourceDrop = PointerProperty(type=StrewSourceProperty)
+    bpy.types.Scene.StrewImportedBiomes = PointerProperty(type=StrewImportedBiomes)
     bpy.types.Scene.StrewSaveAsset = PointerProperty(type=SaveAsset)
     bpy.types.Scene.SMAL = PointerProperty(type=SMAList)
     bpy.types.Scene.SMSL = PointerProperty(type=SMSList)
@@ -334,5 +338,6 @@ def unregister():
     del bpy.types.Scene.StrewPresetDrop
     del bpy.types.Scene.StrewSourceDrop
     del bpy.types.Scene.StrewSaveAsset
+    del bpy.types.Scene.StrewImportedBiomes
     del bpy.types.Scene.SMAL
     del bpy.types.Scene.SMSL

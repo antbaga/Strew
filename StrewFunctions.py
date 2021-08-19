@@ -21,6 +21,7 @@ terrain_property = "Strew_Terrain_Name"
 local_folder_path = "%STREW%"
 preset_list_enum = []
 sources_list_enum = []
+imported_list_enum = []
 
 #####################################################################################
 #

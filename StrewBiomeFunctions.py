@@ -2,6 +2,7 @@ import bpy
 from . import StrewUi, StrewManOperators, __init__, StrewProps, StrewFunctions
 import json
 
+active_biome = ""
 #####################################################################################
 #
 #       SETUP
@@ -114,17 +115,6 @@ def assign_collection(biome, lod0_col, lod1_col, lod2_col, lod3_col, proxy_col, 
     asset_node.inputs[30].default_value = lod3_col     # assign collection to field
 
 
-def replace_biome_creator(biome, way):
-    new_biome = bpy.data.node_groups[biome]
-
-    if way == "in":
-        bpy.data.objects["Strew_Compositor_Biome"].modifiers["Strew_Terrain"].node_group = new_biome
-        new_biome.nodes["Switch.028"].inputs[0].default_value = False
-
-    elif way == "out":
-        new_biome.nodes["Switch.028"].inputs[0].default_value = True
-
-
 def add_object_node(biome, terrain_object):
 
     # Setup Object Info node
@@ -139,6 +129,76 @@ def add_object_node(biome, terrain_object):
     biome.links.new(object_info_node.outputs["Geometry"], join_geometry_node.inputs[0])
 
     return object_info_node
+
+
+#####################################################################################
+#
+#       BIOME CREATOR SWITCH
+#
+#####################################################################################
+
+
+def replace_biome_creator(biome, way):
+    new_biome = bpy.data.node_groups[biome]
+
+    if way == "in":
+        bpy.data.objects["Strew_Compositor_Biome"].modifiers["Strew_Terrain"].node_group = new_biome
+        new_biome.nodes["Switch.028"].inputs[0].default_value = False
+
+    elif way == "out":
+        new_biome.nodes["Switch.028"].inputs[0].default_value = True
+
+
+def switch_active_biome(new_biome):
+    global active_biome
+    old_biome = active_biome
+    if old_biome != "":
+        replace_biome_creator(old_biome, 'out')
+    replace_biome_creator(new_biome, 'in')
+
+    active_biome = new_biome
+
+#####################################################################################
+#
+#       LIST IMPORTED BIOMES
+#
+#####################################################################################
+
+
+def imported_biome_list(biome_name):
+
+    biome_list = {}
+    for biome in StrewProps.preset_list_enum:
+        if biome[0] == biome_name:
+            biome_list[biome[0]] = biome[0], biome[1], biome[2]
+
+    if bpy.context.scene.get('Strew_Imported_Biomes') is not None:
+        imported_biomes = bpy.context.scene.get('Strew_Imported_Biomes').to_dict()
+        for biome in imported_biomes:
+            if biome not in biome_list:
+                biome_list[biome] = imported_biomes[biome][0], imported_biomes[biome][1], imported_biomes[biome][2]
+            else:
+                return "already imported"
+
+    bpy.context.scene["Strew_Imported_Biomes"] = biome_list
+
+
+def get_imported_biomes_list():
+    biome_list = []
+
+    for scene in bpy.data.scenes:
+        if scene.get('Strew_Imported_Biomes') is not None:
+            imported_biomes = scene.get('Strew_Imported_Biomes').to_dict()
+            for biome in imported_biomes:
+                biome_list.append((imported_biomes[biome][0], imported_biomes[biome][1], imported_biomes[biome][2]))
+
+    return biome_list
+
+#####################################################################################
+#
+#       REGISTER AND UNREGISTER
+#
+#####################################################################################
 
 
 classes = [

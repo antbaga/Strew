@@ -1,45 +1,14 @@
 {
-    "%STREW%This_file": [
+    "Biome 01": [
         {
-            "name": "This file",
-            "identifier": "%STREW%This_file",
-            "description": "All objects present in this file.",
-            "assets": []
-        }
-    ],
-    "%STREW%custom": [
-        {
-            "name": "custom",
-            "identifier": "%STREW%custom",
-            "description": "Custom assets made by user.",
-            "assets": [
-                {
-                    "file": "%CUSTOM%Cube.blend",
-                    "name": "Cube",
-                    "type": "Collection",
-                    "description": "Custom Asset",
-                    "category": "grass",
-                    "objects": {
-                        "LOD_0": "Cube",
-                        "LOD_1": "Cube",
-                        "LOD_2": "Cube",
-                        "LOD_3": "Cube",
-                        "proxy": "Cube"
-                    }
-                }
-            ]
-        }
-    ],
-    "%STREW%rocks": [
-        {
-            "name": "rocks",
-            "identifier": "%STREW%rocks",
-            "description": "All things that are minerals.",
+            "name": "Biome 01",
+            "identifier": "Biome 01",
+            "description": "Clone of Biome 01",
             "assets": [
                 {
                     "file": "%STREW%rocks.blend",
-                    "type": "Collection",
                     "name": "Variante 1",
+                    "type": "Collection",
                     "description": "less beautiful cube",
                     "category": "rocks",
                     "objects": {
@@ -52,8 +21,8 @@
                 },
                 {
                     "file": "%STREW%rocks.blend",
-                    "type": "Collection",
                     "name": "Variante 2",
+                    "type": "Collection",
                     "description": "even less beautiful cube",
                     "category": "rocks",
                     "objects": {
@@ -67,21 +36,29 @@
             ]
         }
     ],
-    "%STREW%plants": [
+    "Biome 03": [
         {
-            "name": "plants",
-            "identifier": "%STREW%plants",
-            "description": "All things that are vegetables.",
+            "name": "Biome 03",
+            "identifier": "Biome 03",
+            "description": "Custom Preset",
             "assets": [
                 {
                     "file": "%STREW%plants.blend",
-                    "type": "Object",
                     "name": "Basilic",
+                    "type": "Object",
                     "description": "Beautiful basilic",
                     "category": "grass",
                     "objects": {}
                 }
             ]
+        }
+    ],
+    "Biome B": [
+        {
+            "name": "Biome B",
+            "identifier": "Biome B",
+            "description": "Clone of Biome 01",
+            "assets": []
         }
     ]
 }

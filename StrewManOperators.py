@@ -102,21 +102,22 @@ class InstanceBiomeCompositor(Operator):
         strew_workspace = SFunc.strew_compositor_workspace
         strew_scene = SFunc.strew_compositor_scene
 
-
         if self.switcher == 0:
             StrewBiomeFunctions.replace_biome_creator(SFunc.selected_biome(context), "in")
+            StrewBiomeFunctions.active_biome = SFunc.selected_biome(context)
             current_scene = bpy.context.scene.name
             current_workspace = bpy.context.workspace.name
             bpy.context.window.scene = bpy.data.scenes[strew_scene]
             bpy.context.window.workspace = bpy.data.workspaces[strew_workspace]
             ui_switch = context.scene.strew_ui_switch
             ui_switch.panels = {'Biomes'}
+            bpy.data.scenes[SFunc.strew_compositor_scene].StrewImportedBiomes.ImportedBiomes = SFunc.selected_biome(context)
             self.switcher = 1
 
             return {'FINISHED'}
 
         elif self.switcher == 1:
-            StrewBiomeFunctions.replace_biome_creator(SFunc.selected_biome(context), "out")
+            StrewBiomeFunctions.replace_biome_creator(StrewBiomeFunctions.active_biome, "out")
             bpy.context.window.scene = bpy.data.scenes[self.current_scene]
             bpy.context.window.workspace = bpy.data.workspaces[self.current_workspace]
             ui_switch = context.scene.strew_ui_switch
@@ -457,7 +458,7 @@ class ImportBiome(Operator):
         selected_biome = SFunc.selected_biome(context)                     # get biome name
         asset_list = SFunc.get_assets_list(self, context, selected_biome)  # get asset list
 
-        StrewProps.imported_biome_list(selected_biome)                     # add biome to imported biomes list
+        StrewBiomeFunctions.imported_biome_list(selected_biome)                     # add biome to imported biomes list
         master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = False           # enable collections
 
