@@ -370,14 +370,13 @@ def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, ass
 
     if '"' in asset_name:                                                # prevents " in the file
         print('Please, ensure there is no " in the name of the asset.')  # as it will cause problems
-        pass
-    if "save_asset_in_file" in self.name:
+    if "Save asset" in self.name:
         with open(preset_folder_path + source_file, 'r') as json_file:       # Read the biomes file to build list
             biomes = json.load(json_file)
     else:
         with open(preset_folder_path + biome_file, 'r') as json_file:       # Read the biomes file to build list
             biomes = json.load(json_file)
-    print(self.name)
+
     for data in biomes[biome_name]:                                     # add the asset to the list
         data['assets'].append({
             "file": asset_file,
@@ -388,7 +387,7 @@ def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, ass
             "objects": json.loads(asset_objects.replace("'", "\""))
         })
 
-    if "save_asset_in_file" in self.name:
+    if "Save asset" in self.name:
         with open(preset_folder_path + source_file, 'w') as json_file:       # rewrite the file
             json.dump(biomes, json_file, indent=4)
     else:

@@ -302,25 +302,77 @@ class RemoveAssetView(Operator):
 
 class SaveAsset(Operator):
     bl_idname = "strew.save_asset"
-    bl_label = "save_asset_in_file"
+    bl_label = "Save asset"
+
+    def draw(self, context):
+        asset_props = context.scene.StrewSaveAsset
+
+        lay = self.layout
+        col = lay.column(align=True)
+        col.prop(asset_props, "globalsave")
+        col.prop(asset_props, "asset_name")
+        col.prop(asset_props, "asset_description")
+        col.prop(asset_props, "asset_category")
+        col.prop(asset_props, "asset_type")
+        if asset_props.asset_type:
+            col.prop(asset_props, "lod_0")
+            col.prop(asset_props, "lod_1")
+            col.prop(asset_props, "lod_2")
+            col.prop(asset_props, "lod_3")
+            col.prop(asset_props, "proxy")
 
     def execute(self, context):
-        SFunc.export_asset(self, context)
 
-        asset = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index]
+
 
         source_name = "%STREW%custom"
+        #add strewsourcedropdown to ask which collection to save in
+
+        asset = context.scene.StrewSaveAsset
+
+        if asset.asset_type:
+            asset_type = "Collection"
+            objects_list = {"LOD_0": asset.lod_0.name, "LOD_1": asset.lod_1.name, "LOD_2": asset.lod_2.name,
+                            "LOD_3": asset.lod_3.name, "proxy": asset.proxy.name}
+
+            print(objects_list)
+        else:
+            asset_type = "Object"
+            objects_list = "{}"
+
+        if asset.globalsave:
+            filepath = "%CUSTOM%"+asset.asset_name+".blend"
+            SFunc.export_asset(self, context)
+        else:
+            if bpy.data.filepath == "":
+                print("can't create asset from unsaved blend. Asset will be save globally")
+                filepath = "%CUSTOM%" + asset.asset_name + ".blend"
+                SFunc.export_asset(self, context)
+            else:
+                filepath = bpy.data.filepath
 
         SFunc.add_asset(self, context, source_name,
-                        "%CUSTOM%"+asset['name']+".blend",
-                        asset['name'],
-                        asset['type'],
-                        asset['description'],
-                        asset['category'],
-                        asset['objects'])
+                        filepath,
+                        asset.asset_name,
+                        asset_type,
+                        asset.asset_description,
+                        asset.asset_category,
+                        str(objects_list))
+
         SCENE_OT_list_populate.execute(self, context)
         return{'FINISHED'}
 
+    def invoke(self, context, event):
+
+        # Fill in the fields for default value
+        asset_props = context.scene.StrewSaveAsset
+        asset = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index]
+
+        asset_props.asset_name = asset["name"]
+        asset_props.asset_description = asset["description"]
+        asset_props.asset_category = asset["category"]
+
+        return context.window_manager.invoke_props_dialog(self)
 #####################################################################################
 #
 #       UPDATE LISTS FOR UI

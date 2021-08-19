@@ -238,6 +238,54 @@ def imported_biome_list(biome_name):
 
 #####################################################################################
 #
+#       SAVE ASSET PROPS
+#
+#####################################################################################
+
+class SaveAsset(PropertyGroup):
+    asset_name: StringProperty(
+        default="",
+        name="Name"
+    )
+    asset_description: StringProperty(
+        default="",
+        name="Description"
+    )
+    asset_category: StringProperty(
+        default="",
+        name="Category"
+    )
+    asset_type: BoolProperty(
+        default=False,
+        name="Use LOD"
+    )
+    lod_0: PointerProperty(
+        name="LOD 0",
+        type=bpy.types.Object
+    )
+    lod_1: PointerProperty(
+        name="LOD 1",
+        type=bpy.types.Object
+    )
+    lod_2: PointerProperty(
+        name="LOD 2",
+        type=bpy.types.Object
+    )
+    lod_3: PointerProperty(
+        name="LOD 3",
+        type=bpy.types.Object
+    )
+    proxy: PointerProperty(
+        name="Proxy",
+        type=bpy.types.Object
+    )
+    globalsave: BoolProperty(
+        name="Save globally",
+        description="If true, a copy of the asset will be saved in the Strew library"
+    )
+
+#####################################################################################
+#
 #       REGISTER AND UNREGISTER
 #
 #####################################################################################
@@ -261,6 +309,8 @@ classes = [
     # --- Properties ---
     PresetNameString,
     UiSwitch,
+    # --- Save Assets ---
+    SaveAsset,
 ]
 
 
@@ -271,6 +321,7 @@ def register():
     bpy.types.Scene.strew_ui_switch = bpy.props.PointerProperty(type=UiSwitch)
     bpy.types.Scene.StrewPresetDrop = PointerProperty(type=StrewPresetProperty)
     bpy.types.Scene.StrewSourceDrop = PointerProperty(type=StrewSourceProperty)
+    bpy.types.Scene.StrewSaveAsset = PointerProperty(type=SaveAsset)
     bpy.types.Scene.SMAL = PointerProperty(type=SMAList)
     bpy.types.Scene.SMSL = PointerProperty(type=SMSList)
 
@@ -282,5 +333,6 @@ def unregister():
     del bpy.types.Scene.strew_ui_switch
     del bpy.types.Scene.StrewPresetDrop
     del bpy.types.Scene.StrewSourceDrop
+    del bpy.types.Scene.StrewSaveAsset
     del bpy.types.Scene.SMAL
     del bpy.types.Scene.SMSL

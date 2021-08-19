@@ -16,9 +16,23 @@
                 {
                     "file": "%CUSTOM%Cube.blend",
                     "name": "Cube",
+                    "type": "Collection",
+                    "description": "Cubic asset",
+                    "category": "rocks",
+                    "objects": {
+                        "LOD_0": "Cube",
+                        "LOD_1": "Cube",
+                        "LOD_2": "Cube",
+                        "LOD_3": "Cube",
+                        "proxy": "Cube"
+                    }
+                },
+                {
+                    "file": "%CUSTOM%Cube.blend",
+                    "name": "Cube",
                     "type": "Object",
-                    "description": "Custom Asset",
-                    "category": "grass",
+                    "description": "unsave cube",
+                    "category": "trees",
                     "objects": {}
                 }
             ]
