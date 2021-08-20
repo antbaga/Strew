@@ -42,82 +42,101 @@ class StrewPreferences(AddonPreferences):
     filepath: StringProperty(
         name="Strew Folder Path",
         subtype='DIR_PATH',
-        default=os.path.dirname(os.path.realpath(__file__)))
+        default=StrewFunctions.strew_path)
 
     def draw(self, context):
+        panel_switch = context.scene.StrewPanelSwitch
+
         layout = self.layout
         scene = context.scene
-        layout.label(text="Determines where the Strew files will be saved")
-        layout.prop(self, "filepath")
-
-        #######################################
-        #   START ASSET MANAGER, LIBRARY PART 
-        #######################################
-
         col = layout.row(align=True)
-        # split = col.split()
-        box = col.box()
+        col.prop(panel_switch, "Preferences")
 
-        row = box.row()
-        row.label(text='Asset Library :')
-        row.prop(context.scene.StrewSourceDrop, "StrewSourceDropdown")
-        row.separator(factor=5.4)
-        # row.operator("scene.source_populate",text= "populate")
-        row = box.row()
-        row.template_list("SMS_UL_List", "", scene.SMSL, "collection", scene.SMSL, "active_user_index", rows=25)
+        if panel_switch.Preferences == {'Settings'}:
 
-        #######################################
-        #   CENTRAL BUTTONS
-        #######################################
-        row = col.column(align=True)
-        scale_row = row.column()
-        scale_row.scale_x = 0.30
-        scale_row.scale_y = 2.0
-        scale_row.separator(factor=15.0)
-        scale_row.operator("strew.add_asset_manager", icon="ADD", text="")
-        scale_row.operator("strew.remove_asset_manager", icon="REMOVE", text="")
-        scale_row.operator("Strew.save_asset", icon="BLENDER", text="")
+            layout.label(text="Determines where the Strew files will be saved")
+            layout.prop(self, "filepath")
 
-        #######################################
-        #   PRESET PART OF ASSET MANAGER
-        #######################################
+        elif panel_switch.Preferences == {'Assets'}:
 
-        box = col.box()
-        row = box.row()
-        row.label(text='Biome Editor :')
-        row.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
+            #######################################
+            #   START ASSET MANAGER, LIBRARY PART
+            #######################################
 
-        row = box.row()
-        split_row = row.split()
-        split_row.scale_x = 33.4
-        split_row.separator()
-        split_row = row.split()
-        split_row.operator("strew.add_biome_popup", text="New biome")
+            col = layout.row(align=True)
+            box = col.box()
 
-        row = box.row()
-        split_row = row.split()
-        split_row.scale_x = 33.4
-        split_row.separator()
-        split_row = row.split()
-        split_row.operator("strew.remove_biome_popup", text="Remove biome")
+            row = box.row()
+            row.prop(context.scene.StrewSourceDrop, "StrewSourceDropdown", text="Asset Library")
+            row.scale_x = 0.90
+            row.operator("strew.source_populate", text="refresh list")
+            row = box.row()
+            row.separator(factor=0.85)
+            row = box.row()
+            row.template_list("SRCFILES_UL_List", "", scene.SourceLibrary, "collection", scene.SourceLibrary, "active_user_index", rows=25)
 
-        row = box.row()
-        split_row = row.split()
-        split_row.scale_x = 33.4
-        split_row.separator()
-        split_row = row.split()
-        split_row.operator("strew.clone_biome_popup", text="Clone biome")
+            #######################################
+            #   CENTRAL BUTTONS
+            #######################################
+            row = col.column(align=True)
+            scale_row = row.column()
+            scale_row.scale_x = 0.30
+            scale_row.scale_y = 2.0
+            scale_row.separator(factor=15.0)
 
-        row = box.row()
-        split_row = row.split()
-        split_row.scale_x = 33.4
-        split_row.separator()
-        split_row = row.split()
-        split_row.operator("strew.rename_biome_popup", text="edit biome")
+            if StrewFunctions.selected_source(context) == "%STREW%This_file":
+                scale_row.operator("Strew.save_asset", icon="ADD", text="").add_to_list = True
+            else:
+                scale_row.operator("strew.add_asset_manager", icon="ADD", text="")
+            scale_row.operator("strew.remove_asset_manager", icon="REMOVE", text="")
 
 
-        row = box.row()
-        row.template_list("SMA_UL_List", "", scene.SMAL, "collection", scene.SMAL, "active_user_index", rows=20)
+            #######################################
+            #   PRESET PART OF ASSET MANAGER
+            #######################################
+
+            box = col.box()
+            row = box.row()
+            row.label(text='Biome Editor :')
+            row.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
+
+            row = box.row()
+            split_row = row.split()
+            split_row.scale_x = 33.4
+            split_row.separator()
+            split_row = row.split()
+            split_row.operator("strew.add_biome_popup", text="New biome")
+
+            row = box.row()
+            split_row = row.split()
+            split_row.scale_x = 33.4
+            split_row.separator()
+            split_row = row.split()
+            split_row.operator("strew.remove_biome_popup", text="Remove biome")
+
+            row = box.row()
+            split_row = row.split()
+            split_row.scale_x = 33.4
+            split_row.separator()
+            split_row = row.split()
+            split_row.operator("strew.clone_biome_popup", text="Clone biome")
+
+            row = box.row()
+            split_row = row.split()
+            split_row.scale_x = 33.4
+            split_row.separator()
+            split_row = row.split()
+            split_row.operator("strew.rename_biome_popup", text="edit biome")
+
+            row = box.row()
+            row.template_list("PRESET_UL_List", "", scene.SMAL, "collection", scene.SMAL, "active_user_index", rows=20)
+
+
+#####################################################################################
+#
+#       REGISTER AND UNREGISTER
+#
+#####################################################################################
 
 
 classes = [

@@ -7,7 +7,7 @@ import addon_utils
 
 
 class MainPanel(bpy.types.Panel):
-    bl_label = "Strew"
+    bl_label = __name__
     bl_idname = "VIEW_3D_PT_STREW_Interface"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -15,12 +15,9 @@ class MainPanel(bpy.types.Panel):
     bl_description = "STREW main panel"
 
     def draw(self, context):
-        ui_switch = context.scene.strew_ui_switch
-        StrewProperty = context.scene.preset_name_string
-        active_object = bpy.context.active_object
+        panel_switch = context.scene.StrewPanelSwitch
         selected_biome = StrewFunctions.selected_biome(context)
         imported_biomes = bpy.context.scene.get('Strew_Imported_Biomes')
-        object_biome = active_object.get(StrewFunctions.terrain_property)
 
         lay = self.layout
         r = lay.row(align=True)
@@ -30,7 +27,7 @@ class MainPanel(bpy.types.Panel):
         #       3D VIEW
         #####################################################################################
 
-        if ui_switch.panels == {'General'} and\
+        if panel_switch.MainView == {'General'} and\
                 bpy.context.window.workspace.name != StrewFunctions.strew_compositor_workspace:
 
             c.operator("strew.instance_prefs_panel", text="Strew Settings...")
@@ -42,25 +39,40 @@ class MainPanel(bpy.types.Panel):
             #       BIOME IMPORTATION
             #################################################################################
 
-            if imported_biomes is not None:
-                if selected_biome in imported_biomes:
-                    c.operator("strew.biome_compositor", text="Biome Compositor").switcher = 0
+            if bpy.context.active_object is not None and bpy.context.active_object.type == 'MESH':
+                active_object = bpy.context.active_object
 
-            if active_object is not None and active_object.type == 'MESH':
+                object_biome = active_object.get(StrewFunctions.terrain_property)
                 if object_biome is None:
-                    c.operator("strew.import_biome", text="Import biome")
-                    c.operator("strew.add_biome_popup", text="Create biome")
-                elif object_biome != selected_biome:
-                    c.operator("strew.replace_biome", text="Replace biome")
-                elif object_biome == selected_biome:
+                    if imported_biomes is not None:
+                        if selected_biome in imported_biomes:
+                            c.operator("strew.assign_biome", text="Assign biome")
+                        else:
+                            c.operator("strew.import_biome", text="Import biome")
+                    else:
+                        c.operator("strew.import_biome", text="Import biome")
+
+                    # c.operator("strew.add_biome_popup", text="Create biome")
+                else:
+                    if object_biome != selected_biome:
+                        c.operator("strew.replace_biome", text="Replace biome")
+
+                if imported_biomes is not None:
+                    if selected_biome in imported_biomes:
+                        c.operator("strew.biome_compositor", text="Biome Compositor").switcher = 0
+                        c.separator(factor=2.0)
+
+                if object_biome is not None:
+                    c.label(text=str(object_biome))
                     c.operator("strew.update_biome", text="Update biome")
                     c.operator("strew.remove_biome", text="Remove biome")
+
 
         #####################################################################################
         #       BIOME COMPOSITOR
         #####################################################################################
 
-        elif ui_switch.panels == {'Biomes'} or bpy.context.scene.name == StrewFunctions.strew_compositor_scene or\
+        elif panel_switch.MainView == {'Biomes'} or bpy.context.scene.name == StrewFunctions.strew_compositor_scene or\
                 bpy.context.window.workspace.name == StrewFunctions.strew_compositor_workspace:
 
             Geonode_Tree = bpy.data.node_groups["Geometry Nodes.005"].nodes["trees"].inputs
@@ -69,9 +81,9 @@ class MainPanel(bpy.types.Panel):
             c = r.column(align=True)
             c.scale_x = 0.30
             c.scale_y = 2.0
-            c.prop(StrewProperty, "Decorator")
+            c.prop(panel_switch, "Decorator")
             c.separator(factor=1.0)
-            c.prop(StrewProperty, "AssetList")
+            c.prop(panel_switch, "AssetList")
             r.separator(factor=2.0)
             c = r.column(align=True)
             c.prop(context.scene.StrewImportedBiomes, "ImportedBiomes")
@@ -79,13 +91,13 @@ class MainPanel(bpy.types.Panel):
             c.operator("strew.biome_compositor", text="Exit Biome Compositor").switcher = 1
 
             c.separator(factor=3.0)
-            if StrewProperty.Decorator == {"Trees"}:
+            if panel_switch.Decorator == {"Trees"}:
                 for Input in Geonode_Tree:
                     c.prop(Input, "default_value")
-            if StrewProperty.Decorator == {"Grass"}:
+            if panel_switch.Decorator == {"Grass"}:
                 for Input in Geonode_Grass:
                     c.prop(Input, "default_value")
-            if StrewProperty.Decorator == {"Rocks"}:
+            if panel_switch.Decorator == {"Rocks"}:
                 for Input in Geonode_Rocks:
                     c.prop(Input, "default_value")
 

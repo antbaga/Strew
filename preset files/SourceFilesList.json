@@ -17,23 +17,43 @@
                     "file": "%CUSTOM%Cube.blend",
                     "name": "Cube",
                     "type": "Collection",
-                    "description": "Cubic asset",
-                    "category": "rocks",
+                    "description": "Custom Asset",
+                    "category": "grass",
                     "objects": {
                         "LOD_0": "Cube",
                         "LOD_1": "Cube",
                         "LOD_2": "Cube",
                         "LOD_3": "Cube",
-                        "proxy": "Cube"
+                        "PROXY": "Cube"
                     }
                 },
                 {
                     "file": "%CUSTOM%Cube.blend",
                     "name": "Cube",
-                    "type": "Object",
-                    "description": "unsave cube",
-                    "category": "trees",
-                    "objects": {}
+                    "type": "Collection",
+                    "description": "Custom Asset",
+                    "category": "grass",
+                    "objects": {
+                        "LOD_0": "Cube",
+                        "LOD_1": "Cube",
+                        "LOD_2": "Cube",
+                        "LOD_3": "Cube",
+                        "PROXY": "Cube"
+                    }
+                },
+                {
+                    "file": "%CUSTOM%Cube.blend",
+                    "name": "Cube",
+                    "type": "Collection",
+                    "description": "Custom Asset",
+                    "category": "grass",
+                    "objects": {
+                        "LOD_0": "Cube",
+                        "LOD_1": "Cube",
+                        "LOD_2": "Cube",
+                        "LOD_3": "Cube",
+                        "PROXY": "Cube"
+                    }
                 },
                 {
                     "file": "%CUSTOM%Cube.blend",

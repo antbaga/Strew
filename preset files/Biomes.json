@@ -7,20 +7,6 @@
             "assets": [
                 {
                     "file": "%STREW%rocks.blend",
-                    "name": "Variante 1",
-                    "type": "Collection",
-                    "description": "less beautiful cube",
-                    "category": "rocks",
-                    "objects": {
-                        "LOD_0": "Espece 1_Variante 1_LOD0",
-                        "LOD_1": "Espece 1_Variante 1_LOD0",
-                        "LOD_2": "Espece 1_Variante 1_LOD0",
-                        "LOD_3": "Espece 1_Variante 1_LOD0",
-                        "PROXY": "Espece 1_Variante 1_LOD0"
-                    }
-                },
-                {
-                    "file": "%STREW%rocks.blend",
                     "name": "Variante 2",
                     "type": "Collection",
                     "description": "even less beautiful cube",
@@ -32,6 +18,14 @@
                         "LOD_3": "Espece 1_Variante 2_LOD0",
                         "PROXY": "Espece 1_Variante 2_LOD0"
                     }
+                },
+                {
+                    "file": "%CUSTOM%Cube.blend",
+                    "name": "Cube",
+                    "type": "Object",
+                    "description": "Custom Asset",
+                    "category": "grass",
+                    "objects": {}
                 }
             ]
         }
@@ -58,6 +52,14 @@
             "name": "Biome B",
             "identifier": "Biome B",
             "description": "Clone of Biome 01",
+            "assets": []
+        }
+    ],
+    "New Biome": [
+        {
+            "name": "New Biome",
+            "identifier": "New Biome",
+            "description": "Description of New biome",
             "assets": []
         }
     ]

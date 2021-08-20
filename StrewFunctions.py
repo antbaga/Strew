@@ -22,6 +22,9 @@ local_folder_path = "%STREW%"
 preset_list_enum = []
 sources_list_enum = []
 imported_list_enum = []
+libraries_target_enum = []
+strew_folder = os.path.basename(os.path.dirname(__file__))
+strew_path = os.path.dirname(__file__)
 
 #####################################################################################
 #
@@ -31,7 +34,8 @@ imported_list_enum = []
 
 
 def get_path(self, context, path):
-    filepath = context.preferences.addons["Strew"].preferences.filepath
+    filepath = context.preferences.addons[strew_folder].preferences.filepath
+
     if not filepath.endswith("\\"):
         filepath = filepath + "\\"
     blends = filepath + blend_folder
@@ -49,7 +53,7 @@ def get_path(self, context, path):
 
 
 def selected_biome(context):
-    biome_name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
+    biome_name = context.scene.StrewPresetDrop.StrewPresetDropdown
     return biome_name
 
 
@@ -361,7 +365,7 @@ def rename_biome(self, context, initial_name, new_name, new_description):
 #####################################################################################
 
 
-def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, asset_description, asset_category, asset_objects):
+def add_asset(self, context, target, biome_name, asset_file, asset_name, asset_type, asset_description, asset_category, asset_objects):
     # CALLED FROM:
     #   AddAssetManager                 (Operator)
     #   AddAssetView                    (Operator)
@@ -371,7 +375,7 @@ def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, ass
 
     if '"' in asset_name:                                                # prevents " in the file
         print('Please, ensure there is no " in the name of the asset.')  # as it will cause problems
-    if "Save asset" in self.name:
+    if target == "source":
         with open(preset_folder_path + source_file, 'r') as json_file:       # Read the biomes file to build list
             biomes = json.load(json_file)
     else:
@@ -388,7 +392,7 @@ def add_asset(self, context, biome_name, asset_file, asset_name, asset_type, ass
             "objects": json.loads(asset_objects.replace("'", "\""))
         })
 
-    if "Save asset" in self.name:
+    if target == "source":
         with open(preset_folder_path + source_file, 'w') as json_file:       # rewrite the file
             json.dump(biomes, json_file, indent=4)
     else:
@@ -427,15 +431,43 @@ def remove_asset(self, context, biome_name, asset_name, asset_file):
         json.dump(biomes, json_file, indent=4)
 
 
-def export_asset(self, context):
+def export_asset(self, context, assets):
     # CALLED FROM:
-    #   SaveAsset   (Operator)
+    #   format_asset    (Function)
 
-    asset_name = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index].name  # Get the asset name
+    asset_name = bpy.context.scene.SourceLibrary.collection[bpy.context.scene.SourceLibrary.active_user_index].name  # Get the asset name
     asset = {bpy.context.scene.objects[asset_name]}                                                  # get the actual object
     path = get_path(self, context, 'custom_file')                                                      # find the blend target
 
-    bpy.data.libraries.write(f'{path}{asset_name}.blend', asset, fake_user=True)                         # export to blend
+    bpy.data.libraries.write(f'{path}{asset_name}.blend', assets, fake_user=True)                         # export to blend
+
+
+def format_asset(self, context, asset):
+    # CALLED FROM:
+    #   SaveAsset   (Operator)
+
+    if asset.asset_type:
+        asset_type = "Collection"
+        objects_list = {"LOD_0": asset.lod_0.name, "LOD_1": asset.lod_1.name, "LOD_2": asset.lod_2.name,
+                        "LOD_3": asset.lod_3.name, "PROXY": asset.proxy.name}
+        assets = {asset.lod_0, asset.lod_1, asset.lod_2, asset.lod_3, asset.proxy}
+    else:
+        asset_type = "Object"
+        objects_list = "{}"
+        assets = {asset.proxy}
+
+    if asset.globalsave:
+        filepath = "%CUSTOM%" + asset.asset_name + ".blend"
+        export_asset(self, context, assets)  # does the exportation to file
+    else:
+        if bpy.data.filepath == "":
+            print("can't create asset from unsaved blend. Asset will be save globally")
+            filepath = "%CUSTOM%" + asset.asset_name + ".blend"
+            export_asset(self, context, assets)
+        else:
+            filepath = bpy.data.filepath
+
+    return asset_type, objects_list, filepath
 
 
 #####################################################################################

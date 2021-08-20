@@ -3,6 +3,8 @@ from . import StrewUi, StrewManOperators, __init__, StrewProps, StrewFunctions
 import json
 
 active_biome = ""
+
+
 #####################################################################################
 #
 #       SETUP
@@ -73,29 +75,35 @@ def setup_lod_collection(biome_name, category, strew_collection):
     return category_coll, lod_0, lod_1, lod_2, lod_3, proxy
 
 
-def apply_geometry_nodes(terrain_object, biome_name):
+def apply_geometry_nodes(terrain_object, biome_name, is_imported):
     # CALLED FROM:
     #   ImportBiome     (Operator)
+    #   AssignBiome     (Operator)
 
     terrain_name_property = StrewFunctions.terrain_property
 
-    Mesh = bpy.data.meshes.new(terrain_object.name+"_terrain")
-    biome = bpy.data.objects.new(biome_name, Mesh)
-    biome[terrain_name_property] = biome_name
-
-    bpy.data.collections[StrewFunctions.strew_collection_biomes].objects.link(biome)
-    geometry_node_master = StrewFunctions.geometry_node_master
-    if terrain_name_property in terrain_object:         # checks if object has terrain property
-        print("object already a terrain. replace current biome?")
+    if is_imported:
+        strew_biome = bpy.data.node_groups[biome_name]
     else:
+        Mesh = bpy.data.meshes.new(biome_name + "_terrain")
+        biome = bpy.data.objects.new(biome_name, Mesh)
+        biome[terrain_name_property] = biome_name
+
+        bpy.data.collections[StrewFunctions.strew_collection_biomes].objects.link(biome)
+        geometry_node_master = StrewFunctions.geometry_node_master
+        # create modifier
         modifier = biome.modifiers.new
         strew_terrain = modifier(name='Strew_Terrain', type='NODES')
+        # create node group
         strew_biome = bpy.data.node_groups[geometry_node_master].copy()
         strew_biome.name = biome_name
         strew_terrain.node_group = strew_biome
-        terrain_object[terrain_name_property] = biome_name        # assign terrain property to object
-        new_object_node = add_object_node(strew_biome, terrain_object)
-        strew_biome.nodes[new_object_node.name].inputs[0].default_value = terrain_object
+
+    # assign terrain property to object
+    terrain_object[terrain_name_property] = biome_name
+    # assign object to biome
+    new_object_node = add_object_node(strew_biome, terrain_object)
+    strew_biome.nodes[new_object_node.name].inputs[0].default_value = terrain_object
 
     return strew_biome
 
@@ -131,6 +139,22 @@ def add_object_node(biome, terrain_object):
     return object_info_node
 
 
+def desassign_biome(self, context, biome, terrain_object):
+    # CALLED FROM:
+    #   AssignBiome     (Operator)
+
+    node_tree = bpy.data.node_groups[biome]
+    terrain_name_property = StrewFunctions.terrain_property
+
+    if biome == terrain_object.name:
+        print("can not remove biome from this object. please select terrain.")
+        return
+    node_tree.nodes.remove(node_tree.nodes["User_Terrain_" + terrain_object.name])
+    node_tree.nodes["Switch.028"].inputs[0].default_value = False
+    node_tree.nodes["Switch.028"].inputs[0].default_value = True
+
+    terrain_object[terrain_name_property] = None
+
 #####################################################################################
 #
 #       BIOME CREATOR SWITCH
@@ -158,11 +182,26 @@ def switch_active_biome(new_biome):
 
     active_biome = new_biome
 
+
 #####################################################################################
 #
 #       LIST IMPORTED BIOMES
 #
 #####################################################################################
+
+
+def is_biome_imported(biome_name):
+    if bpy.context.scene.get('Strew_Imported_Biomes') is not None:
+
+        imported_biomes = bpy.context.scene.get('Strew_Imported_Biomes').to_dict()
+        for biome in imported_biomes:
+            print(biome_name)
+            print(imported_biomes[biome][0])
+            if biome_name == imported_biomes[biome][0]:
+                imported = True
+            else:
+                imported = False
+        return imported
 
 
 def imported_biome_list(biome_name):
@@ -193,6 +232,7 @@ def get_imported_biomes_list():
                 biome_list.append((imported_biomes[biome][0], imported_biomes[biome][1], imported_biomes[biome][2]))
 
     return biome_list
+
 
 #####################################################################################
 #

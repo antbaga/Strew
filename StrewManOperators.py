@@ -1,5 +1,5 @@
 from bpy.types import Operator, AddonPreferences
-from bpy.props import StringProperty, EnumProperty
+from bpy.props import StringProperty, EnumProperty, BoolProperty, IntProperty
 from . import __init__, StrewUi, StrewProps, StrewBiomeFunctions
 from . import StrewFunctions as SFunc
 import addon_utils
@@ -91,7 +91,7 @@ class InstanceBiomeCompositor(Operator):
     bl_idname = "strew.biome_compositor"
     bl_label = "Instance_Biome_Compositor"
 
-    switcher: bpy.props.IntProperty(name="switcher")
+    switcher: IntProperty(name="switcher")
     current_scene: bpy.props.StringProperty(name="Current_Scene", default='Scene')
     current_workspace: bpy.props.StringProperty(name="Current_WorkSpace", default="Layout")
 
@@ -109,9 +109,8 @@ class InstanceBiomeCompositor(Operator):
             current_workspace = bpy.context.workspace.name
             bpy.context.window.scene = bpy.data.scenes[strew_scene]
             bpy.context.window.workspace = bpy.data.workspaces[strew_workspace]
-            ui_switch = context.scene.strew_ui_switch
+            ui_switch = context.scene.StrewPanelSwitch
             ui_switch.panels = {'Biomes'}
-            bpy.data.scenes[SFunc.strew_compositor_scene].StrewImportedBiomes.ImportedBiomes = SFunc.selected_biome(context)
             self.switcher = 1
 
             return {'FINISHED'}
@@ -120,7 +119,7 @@ class InstanceBiomeCompositor(Operator):
             StrewBiomeFunctions.replace_biome_creator(StrewBiomeFunctions.active_biome, "out")
             bpy.context.window.scene = bpy.data.scenes[self.current_scene]
             bpy.context.window.workspace = bpy.data.workspaces[self.current_workspace]
-            ui_switch = context.scene.strew_ui_switch
+            ui_switch = context.scene.StrewPanelSwitch
             ui_switch.panels = {'General'}
             self.switcher = 0
 
@@ -139,18 +138,22 @@ class AddBiomePopup(Operator):
     bl_label = "Create new biome"
 
     def draw(self, context):
-        biome = context.scene.preset_name_string
+        biome = context.scene.biomes_names_fields
         lay = self.layout
         c = lay.column(align=True)
         c.prop(biome, "new_name")
         c.prop(biome, "new_description")
 
     def execute(self, context):
-        biome = context.scene.preset_name_string
+        biome = context.scene.biomes_names_fields
         SFunc.new_biome(self, context, biome.new_name, biome.new_description)
+        context.scene.StrewPresetDrop.StrewPresetDropdown = biome.new_name
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        biome = context.scene.biomes_names_fields
+        biome.new_name = "New Biome"
+        biome.new_description = "Description of New biome"
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -159,7 +162,7 @@ class CloneBiomePopup(Operator):
     bl_label = "Clone biome"
 
     def draw(self, context):
-        properties = context.scene.preset_name_string
+        properties = context.scene.biomes_names_fields
         lay = self.layout
         c = lay.column(align=True)
         c.prop(properties, "new_name")
@@ -167,11 +170,17 @@ class CloneBiomePopup(Operator):
 
     def execute(self, context):
         biome_initial_name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
-        biome = context.scene.preset_name_string
+        biome = context.scene.biomes_names_fields
         SFunc.clone_biome(self, context, biome_initial_name, biome.new_name, biome.new_description)
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        biome_prop = context.scene.biomes_names_fields
+        biome_name = SFunc.selected_biome(context)
+        for biome in StrewProps.preset_list_enum:
+            if biome[0] == biome_name:
+                biome_prop.new_name = biome[0]
+                biome_prop.new_description = biome[2]
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -194,19 +203,97 @@ class RenameBiomePopup(Operator):
     bl_label = "Rename biome"
 
     def draw(self, context):
-        properties = context.scene.preset_name_string
+        properties = context.scene.biomes_names_fields
         lay = self.layout
         c = lay.column(align=True)
         c.prop(properties, "new_name")
         c.prop(properties, "new_description")
 
     def execute(self, context):
-        biome = context.scene.preset_name_string                                    # get the infos of biome
+        biome = context.scene.biomes_names_fields                                    # get the infos of biome
         biome_initial_name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown       # from the popup box
         SFunc.rename_biome(self, context, biome_initial_name, biome.new_name, biome.new_description)
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        biome_prop = context.scene.biomes_names_fields
+        biome_name = SFunc.selected_biome(context)
+        for biome in StrewProps.preset_list_enum:
+            if biome[0] == biome_name:
+                biome_prop.new_name = biome[0]
+                biome_prop.new_description = biome[2]
+        return context.window_manager.invoke_props_dialog(self)
+
+
+class SaveAsset(Operator):
+    bl_idname = "strew.save_asset"
+    bl_label = "Save asset"
+
+    add_to_list: BoolProperty(name="add_to_list", default=False)
+
+    def draw(self, context):
+        asset_props = context.scene.StrewSaveAsset
+
+        lay = self.layout
+        col = lay.column(align=True)
+        row = col.row(align=True)
+        row.prop(asset_props, "globalsave")
+        row.prop(asset_props, "target_library")
+        col.separator(factor=2.0)
+        col.prop(asset_props, "asset_name")
+        col.prop(asset_props, "asset_description")
+        col.prop(asset_props, "asset_category")
+        col.prop(asset_props, "asset_type")
+        if asset_props.asset_type:
+            col.prop(asset_props, "lod_0")
+            col.prop(asset_props, "lod_1")
+            col.prop(asset_props, "lod_2")
+            col.prop(asset_props, "lod_3")
+            col.prop(asset_props, "proxy")
+        else:
+            col.prop(asset_props, "proxy", text="object")
+
+    def execute(self, context):
+
+        asset = context.scene.StrewSaveAsset
+        asset_type, objects_list, filepath = SFunc.format_asset(self, context, asset)
+
+        SFunc.add_asset(self, context, "source", asset.target_library,
+                        filepath,
+                        asset.asset_name,
+                        asset_type,
+                        asset.asset_description,
+                        asset.asset_category,
+                        str(objects_list))
+
+        if self.add_to_list:
+            SFunc.add_asset(self, context, "biome", SFunc.selected_biome(context),
+                            filepath,
+                            asset.asset_name,
+                            asset_type,
+                            asset.asset_description,
+                            asset.asset_category,
+                            str(objects_list))
+
+        SCENE_OT_list_populate.execute(self, context)
+        SCENE_OT_source_populate.execute(self, context)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+
+        # Fill in the fields for default value
+        asset_props = context.scene.StrewSaveAsset
+        asset = bpy.context.scene.SourceLibrary.collection[bpy.context.scene.SourceLibrary.active_user_index]
+
+        asset_props.asset_name = asset["name"]
+        asset_props.asset_description = asset["description"]
+        asset_props.asset_category = asset["category"]
+        asset_props.lod_0 = None
+        asset_props.lod_1 = None
+        asset_props.lod_2 = None
+        asset_props.lod_3 = None
+        asset_props.proxy = bpy.data.objects[asset['name']]
+
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -229,12 +316,12 @@ class AddAssetManager(Operator):
 
     def execute(self, context):
         cts = bpy.context.scene
-        asset = cts.SMSL.collection[cts.SMSL.active_user_index]
+        asset = cts.SourceLibrary.collection[cts.SourceLibrary.active_user_index]
 
         biome_name = SFunc.selected_biome(context)
 
         # TODO: add a prompt asking user if he wants to save it locally or not
-        SFunc.add_asset(self, context, biome_name,
+        SFunc.add_asset(self, context, "biome", biome_name,
                         asset['file'],
                         asset['name'],
                         asset['type'],
@@ -261,12 +348,14 @@ class AddAssetView(Operator):
             file_name = bpy.path.basename(bpy.data.filepath)
 
             for obj in bpy.context.selected_objects:
-                SFunc.add_asset(self, context, biome_name, file_name,
-                                                           obj.name,
-                                                           "Object",
-                                                           "Custom asset",
-                                                           "grass",
-                                                            "{}")
+                SFunc.add_asset(self, context, "biome", biome_name,
+                                file_name,
+                                obj.name,
+                                "Object",
+                                "Custom asset",
+                                "grass",
+                                "{}"
+                                )
             return {'FINISHED'}
         else:
             print("can't save as asset from temporary blend file yet. please save your file")
@@ -301,79 +390,6 @@ class RemoveAssetView(Operator):
         return {'FINISHED'}
 
 
-class SaveAsset(Operator):
-    bl_idname = "strew.save_asset"
-    bl_label = "Save asset"
-
-    def draw(self, context):
-        asset_props = context.scene.StrewSaveAsset
-
-        lay = self.layout
-        col = lay.column(align=True)
-        col.prop(asset_props, "globalsave")
-        col.prop(asset_props, "asset_name")
-        col.prop(asset_props, "asset_description")
-        col.prop(asset_props, "asset_category")
-        col.prop(asset_props, "asset_type")
-        if asset_props.asset_type:
-            col.prop(asset_props, "lod_0")
-            col.prop(asset_props, "lod_1")
-            col.prop(asset_props, "lod_2")
-            col.prop(asset_props, "lod_3")
-            col.prop(asset_props, "proxy")
-
-    def execute(self, context):
-
-
-
-        source_name = "%STREW%custom"
-        #add strewsourcedropdown to ask which collection to save in
-
-        asset = context.scene.StrewSaveAsset
-
-        if asset.asset_type:
-            asset_type = "Collection"
-            objects_list = {"LOD_0": asset.lod_0.name, "LOD_1": asset.lod_1.name, "LOD_2": asset.lod_2.name,
-                            "LOD_3": asset.lod_3.name, "proxy": asset.proxy.name}
-
-            print(objects_list)
-        else:
-            asset_type = "Object"
-            objects_list = "{}"
-
-        if asset.globalsave:
-            filepath = "%CUSTOM%"+asset.asset_name+".blend"
-            SFunc.export_asset(self, context)
-        else:
-            if bpy.data.filepath == "":
-                print("can't create asset from unsaved blend. Asset will be save globally")
-                filepath = "%CUSTOM%" + asset.asset_name + ".blend"
-                SFunc.export_asset(self, context)
-            else:
-                filepath = bpy.data.filepath
-
-        SFunc.add_asset(self, context, source_name,
-                        filepath,
-                        asset.asset_name,
-                        asset_type,
-                        asset.asset_description,
-                        asset.asset_category,
-                        str(objects_list))
-
-        SCENE_OT_list_populate.execute(self, context)
-        return{'FINISHED'}
-
-    def invoke(self, context, event):
-
-        # Fill in the fields for default value
-        asset_props = context.scene.StrewSaveAsset
-        asset = bpy.context.scene.SMSL.collection[bpy.context.scene.SMSL.active_user_index]
-
-        asset_props.asset_name = asset["name"]
-        asset_props.asset_description = asset["description"]
-        asset_props.asset_category = asset["category"]
-
-        return context.window_manager.invoke_props_dialog(self)
 #####################################################################################
 #
 #       UPDATE LISTS FOR UI
@@ -409,14 +425,14 @@ class SCENE_OT_source_populate(Operator):
     # else, it will display the files from the strew library
 
     def execute(self, context):
-        context.scene.SMSL.collection.clear()
+        context.scene.SourceLibrary.collection.clear()
         biome = SFunc.selected_source("name")
 
         if biome == "%STREW%This_file":
             blend = bpy.context.blend_data.filepath
             AssetList = bpy.context.scene.objects
             for Asset in AssetList:
-                item = context.scene.SMSL.collection.add()
+                item = context.scene.SourceLibrary.collection.add()
                 item.name = Asset.name
                 item.file = blend
                 item.description = "Custom Asset"
@@ -427,7 +443,7 @@ class SCENE_OT_source_populate(Operator):
         else:
             AssetList = SFunc.get_sources_assets(self, context, biome)
             for Asset in AssetList:
-                item = context.scene.SMSL.collection.add()
+                item = context.scene.SourceLibrary.collection.add()
                 item.name = Asset['name']
                 item.description = Asset['description']
                 item.file = Asset['file']
@@ -462,7 +478,7 @@ class ImportBiome(Operator):
         master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = False           # enable collections
 
-        biome_node = StrewBiomeFunctions.apply_geometry_nodes(terrain_object, selected_biome)  # assign biome
+        biome_node = StrewBiomeFunctions.apply_geometry_nodes(terrain_object, selected_biome, False)  # assign biome
 
         StrewBiomeFunctions.setup_biome_collection(self, context, asset_list, selected_biome, strew_collection, biome_node)
 
@@ -523,6 +539,20 @@ class ReplaceBiome(Operator):
     bl_label = "replace biome"
 
     def execute(self, context):
+        terrain_object = bpy.context.active_object                         # get future terrain
+        selected_biome = SFunc.selected_biome(context)                     # get biome name
+        import_status = StrewBiomeFunctions.is_biome_imported(selected_biome)
+        assigned_biome = bpy.context.active_object[SFunc.terrain_property]
+
+        if assigned_biome == terrain_object.name:
+            print("can not remove biome from this object. please select terrain.")
+            return {'FINISHED'}
+
+        RemoveBiome.execute(self, context)
+        if import_status:
+            StrewBiomeFunctions.apply_geometry_nodes(terrain_object, selected_biome, import_status)  # assign biome
+        else:
+            ImportBiome.execute(self, context)
         return {'FINISHED'}
 
 
@@ -539,6 +569,26 @@ class RemoveBiome(Operator):
     bl_label = "remove biome"
 
     def execute(self, context):
+        terrain_object = bpy.context.active_object
+        biome = bpy.context.active_object[SFunc.terrain_property]
+
+        StrewBiomeFunctions.desassign_biome(self, context, biome, terrain_object)
+        return {'FINISHED'}
+
+
+class AssignBiome(Operator):
+    bl_idname = "strew.assign_biome"
+    bl_label = "Assign_biome"
+
+    # Since this is the first operator to be called on the UI
+    # a full setup is done. However, most functions have fallback
+    # in case they are already setup
+
+    def execute(self, context):
+        terrain_object = bpy.context.active_object                         # get future terrain
+        selected_biome = SFunc.selected_biome(context)                     # get biome name
+
+        StrewBiomeFunctions.apply_geometry_nodes(terrain_object, selected_biome, True)  # assign biome
         return {'FINISHED'}
 
 
@@ -577,6 +627,7 @@ classes = [
     ReplaceBiome,                   # strew.replace_biome
     UpdateBiome,                    # strew.update_biome
     RemoveBiome,                    # strew.remove_biome
+    AssignBiome,                    # strew.assign_biome
 ]
 
 

@@ -118,25 +118,6 @@ class SRCFILES_UL_List(bpy.types.UIList):
             layout.label(text="", icon=User)
 
 
-class SMA_UL_List(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.prop(item, "name", text="", emboss=False)
-        elif self.layout_type in {'GRID'}:
-            layout.alignment = 'CENTER'
-            layout.label(text="", icon_value=icon)
-
-
-class SMS_UL_List(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        layout.context_pointer_set("active_smms_user", item, )
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.prop(item, "name", text="", emboss=False)
-        elif self.layout_type in {'GRID'}:
-            layout.alignment = 'CENTER'
-            layout.label(text="", icon_value=icon)
-
-
 #####################################################################################
 #
 #       LISTS PROPS
@@ -177,34 +158,12 @@ class SMSList(PropertyGroup):
 
 #####################################################################################
 #
-#       PROPERTIES
+#       PANELS
 #
 #####################################################################################
 
 
-class UiSwitch(bpy.types.PropertyGroup):
-    general_panel: bpy.props.BoolProperty(
-        name="general_panel",
-        default=True,
-    )
-    asset_manager: bpy.props.BoolProperty(
-        name="asset_manager",
-        default=False,
-    )
-    panels: bpy.props.EnumProperty(
-        name="panels",
-        description="Preferences panel",
-        items=[
-            ("General", "General", "All things in the universe"),
-            ("Assets", "Assets", "The asset manager"),
-            ("Biomes","Biomes", "The Biome manager")
-        ],
-        default={"General"},
-        options={"ENUM_FLAG"}
-    )
-
-
-def enum(self, context):
+def enum_assets(self, context):
     global asset_list_enum
     global old_preset
 
@@ -220,17 +179,31 @@ def enum(self, context):
         return asset_list_enum
 
 
-class PresetNameString(PropertyGroup):
-    new_name: bpy.props.StringProperty(
-        name="name :",
-        default="New preset",
+class PanelSwitch(bpy.types.PropertyGroup):
+    MainView: bpy.props.EnumProperty(
+        name="panels",
+        description="Preferences panel",
+        items=[
+            ("General", "General", "All things in the universe"),
+            ("Assets", "Assets", "The asset manager"),
+            ("Biomes","Biomes", "The Biome manager")
+        ],
+        default={"General"},
+        options={"ENUM_FLAG"}
     )
-    new_description: bpy.props.StringProperty(
-        name="Description :",
-        default="Custom Preset",
+    Preferences: bpy.props.EnumProperty(
+        name="panels",
+        description="Preferences panel",
+        items=[
+            ("Settings", "Settings", "Strew settings"),
+            ("Assets", "Assets manager", "The asset manager"),
+            ("Biomes","Biomes manager", "The Biome manager")
+        ],
+        default={"Settings"},
+        options={"ENUM_FLAG"}
     )
     AssetList: EnumProperty(
-        items=enum,
+        items=enum_assets,
         options={"ENUM_FLAG"},
     )
     Decorator: EnumProperty(
@@ -241,11 +214,24 @@ class PresetNameString(PropertyGroup):
 
 #####################################################################################
 #
-#       SAVE ASSET PROPS
+#       FIELDS
 #
 #####################################################################################
 
+
+libraries_list = StrewFunctions.libraries_target_enum
+
+
 class SaveAsset(PropertyGroup):
+    def enum_target_libraries(self, context):
+        global libraries_list
+        libraries_list.clear()
+        thumb_list = StrewFunctions.get_source_files(self, context)
+        for source in thumb_list:
+            if source[0] != "%STREW%This_file":
+                libraries_list.append(source)
+        return libraries_list
+
     asset_name: StringProperty(
         default="",
         name="Name"
@@ -286,6 +272,24 @@ class SaveAsset(PropertyGroup):
         name="Save globally",
         description="If true, a copy of the asset will be saved in the Strew library"
     )
+    target_library: EnumProperty(
+        name="Target library",
+        description="Library in which the asset will be saved",
+        items=enum_target_libraries,
+        default=1
+        )
+
+
+class BiomeNamesFields(PropertyGroup):
+    new_name: bpy.props.StringProperty(
+        name="name",
+        default="New preset",
+    )
+    new_description: bpy.props.StringProperty(
+        name="description",
+        default="Custom Preset",
+    )
+
 
 #####################################################################################
 #
@@ -302,16 +306,14 @@ classes = [
     # --- lists ---
     PRESET_UL_List,
     SRCFILES_UL_List,
-    SMA_UL_List,
-    SMS_UL_List,
     # --- ui lists ---
     SMAAsset,
     SMAList,
     SMSAsset,
     SMSList,
-    # --- Properties ---
-    PresetNameString,
-    UiSwitch,
+    # --- Panels ---
+    BiomeNamesFields,
+    PanelSwitch,
     # --- Save Assets ---
     SaveAsset,
 ]
@@ -320,21 +322,21 @@ classes = [
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.preset_name_string = bpy.props.PointerProperty(type=PresetNameString)
-    bpy.types.Scene.strew_ui_switch = bpy.props.PointerProperty(type=UiSwitch)
+    bpy.types.Scene.biomes_names_fields = bpy.props.PointerProperty(type=BiomeNamesFields)
+    bpy.types.Scene.StrewPanelSwitch = bpy.props.PointerProperty(type=PanelSwitch)
     bpy.types.Scene.StrewPresetDrop = PointerProperty(type=StrewPresetProperty)
     bpy.types.Scene.StrewSourceDrop = PointerProperty(type=StrewSourceProperty)
     bpy.types.Scene.StrewImportedBiomes = PointerProperty(type=StrewImportedBiomes)
     bpy.types.Scene.StrewSaveAsset = PointerProperty(type=SaveAsset)
     bpy.types.Scene.SMAL = PointerProperty(type=SMAList)
-    bpy.types.Scene.SMSL = PointerProperty(type=SMSList)
+    bpy.types.Scene.SourceLibrary = PointerProperty(type=SMSList)
 
 
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
-    del bpy.types.Scene.preset_name_string
-    del bpy.types.Scene.strew_ui_switch
+    del bpy.types.Scene.biomes_names_fields
+    del bpy.types.Scene.StrewPanelSwitch
     del bpy.types.Scene.StrewPresetDrop
     del bpy.types.Scene.StrewSourceDrop
     del bpy.types.Scene.StrewSaveAsset
