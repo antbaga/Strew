@@ -1,4 +1,4 @@
-from . import __init__, StrewProps, StrewUi
+from . import __init__, StrewProps, StrewUi, StrewBiomeFunctions
 import bpy
 import os
 import json
@@ -505,12 +505,12 @@ def import_asset(self, context, asset_path, asset_name, asset_type, target_colle
 
         set_active_collection(bpy.context.view_layer.layer_collection, target_collection)
 
-        bpy.ops.wm.append(                                              # import asset
+        asset = bpy.ops.wm.append(                                              # import asset
             filepath=os.path.join(asset_path + f"\\{asset_type}\\" + asset_name),
             directory=os.path.join(asset_path + f"\\{asset_type}\\"),
             filename=asset_name
         )
-
+        StrewBiomeFunctions.imported_assets_list[target_collection.name+"\\"+asset_name] = bpy.context.selected_objects[-1].name
 
 #####################################################################################
 #

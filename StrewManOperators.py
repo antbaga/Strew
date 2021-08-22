@@ -1,6 +1,6 @@
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, EnumProperty, BoolProperty, IntProperty
-from . import __init__, StrewUi, StrewProps, StrewBiomeFunctions
+from . import __init__, StrewUi, StrewProps, StrewBiomeFunctions as SBFunc
 from . import StrewFunctions as SFunc
 import addon_utils
 import bpy
@@ -103,8 +103,8 @@ class InstanceBiomeCompositor(Operator):
         strew_scene = SFunc.strew_compositor_scene
 
         if self.switcher == 0:
-            StrewBiomeFunctions.replace_biome_creator(SFunc.selected_biome(context), "in")
-            StrewBiomeFunctions.active_biome = SFunc.selected_biome(context)
+            SBFunc.replace_biome_creator(SFunc.selected_biome(context), "in")
+            SBFunc.active_biome = SFunc.selected_biome(context)
             current_scene = bpy.context.scene.name
             current_workspace = bpy.context.workspace.name
             bpy.context.window.scene = bpy.data.scenes[strew_scene]
@@ -116,7 +116,7 @@ class InstanceBiomeCompositor(Operator):
             return {'FINISHED'}
 
         elif self.switcher == 1:
-            StrewBiomeFunctions.replace_biome_creator(StrewBiomeFunctions.active_biome, "out")
+            SBFunc.replace_biome_creator(SBFunc.active_biome, "out")
             bpy.context.window.scene = bpy.data.scenes[self.current_scene]
             bpy.context.window.workspace = bpy.data.workspaces[self.current_workspace]
             ui_switch = context.scene.StrewPanelSwitch
@@ -474,55 +474,16 @@ class ImportBiome(Operator):
         selected_biome = SFunc.selected_biome(context)                     # get biome name
         asset_list = SFunc.get_assets_list(self, context, selected_biome)  # get asset list
 
-        StrewBiomeFunctions.imported_biome_list(selected_biome)                     # add biome to imported biomes list
+        SBFunc.imported_biome_list(selected_biome)                     # add biome to imported biomes list
         master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = False           # enable collections
 
-        biome_node = StrewBiomeFunctions.apply_geometry_nodes(terrain_object, selected_biome, False)  # assign biome
+        biome_nodes, biome_object = SBFunc.apply_geometry_nodes(terrain_object, selected_biome, False)  # assign biome
 
-        StrewBiomeFunctions.setup_biome_collection(self, context, asset_list, selected_biome, strew_collection, biome_node)
+        SBFunc.setup_biome_collection(self, context, asset_list, selected_biome, strew_collection, biome_nodes)
+        SBFunc.objects_list_property(biome_object)
 
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = True            # disable collections
-
-        return {'FINISHED'}
-
-
-class ImportAsset(Operator):
-    bl_idname = "strew.import_assets"
-    bl_label = "import_assets"
-
-    def execute(self, context):
-        strew_collection = SFunc.setup_collections()                                        # get the main collection
-        biome = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown                       # get the selected biome
-        blend_folder = SFunc.get_path(self, context, "blend")                               # get the blend folder
-
-        layer_collection = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
-        layer_collection.children[SFunc.strew_collection_assets].exclude = False           # enable collections
-
-        asset_list = SFunc.get_assets_list(self, context, biome)                            # get the assets list
-        SFunc.setup_biome_collection(self, context, asset_list)
-        for asset in asset_list:                                                            # import the assets
-            #   IF type = Object
-            # check if category is present in thumblist
-            # if not, add it, and
-            # create another collection with the name   Strew_Biome_name+category_name
-            # return this collection to use.
-            # else, return the collection Strew_Biome_name+category_name
-            # and use this one.
-            #       ELSE
-            # look for objects key and for each, create a collection.
-            # in order to have everything homogeneous, if there are LOD that other do not have,
-            # take the lesser poly first to fill in the blanks.
-            asset_name = asset['name']
-            asset_path = asset['file']
-            asset_type = asset['type']
-
-            if SFunc.local_folder_path in asset_path:
-                asset_path = asset_path.replace(SFunc.local_folder_path, blend_folder)
-
-            SFunc.import_asset(self, context, asset_path, asset_name, asset_type, strew_collection)
-
-        layer_collection.children[SFunc.strew_collection_assets].exclude = True             # disable collections
 
         return {'FINISHED'}
 
@@ -541,7 +502,7 @@ class ReplaceBiome(Operator):
     def execute(self, context):
         terrain_object = bpy.context.active_object                         # get future terrain
         selected_biome = SFunc.selected_biome(context)                     # get biome name
-        import_status = StrewBiomeFunctions.is_biome_imported(selected_biome)
+        import_status = SBFunc.is_biome_imported(selected_biome)
         assigned_biome = bpy.context.active_object[SFunc.terrain_property]
 
         if assigned_biome == terrain_object.name:
@@ -550,7 +511,7 @@ class ReplaceBiome(Operator):
 
         RemoveBiome.execute(self, context)
         if import_status:
-            StrewBiomeFunctions.apply_geometry_nodes(terrain_object, selected_biome, import_status)  # assign biome
+            SBFunc.apply_geometry_nodes(terrain_object, selected_biome, import_status)  # assign biome
         else:
             ImportBiome.execute(self, context)
         return {'FINISHED'}
@@ -561,6 +522,34 @@ class UpdateBiome(Operator):
     bl_label = "update biome"
 
     def execute(self, context):
+        biome = bpy.data.objects[SFunc.selected_biome(context)]  # get biome name
+        asset_list = SFunc.get_assets_list(self, context, biome.name)  # get asset list
+
+        master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
+        master_collection_layer.children[SFunc.strew_collection_assets].exclude = False  # enable collections
+
+        formated_list = SBFunc.format_asset_list(asset_list, biome.name)
+        for asset in formated_list:
+            if not SBFunc.is_asset_imported(formated_list[asset]['fullname'], biome):
+                collection = bpy.data.collections[formated_list[asset]['coll']]
+
+                SFunc.import_asset(self, context, formated_list[asset]['file'],
+                                   formated_list[asset]['name'],
+                                   "Object",
+                                   collection,
+                                   )
+        asset_list_names = {}
+        for asset in formated_list:
+            asset_list_names[asset] = formated_list[asset]["fullname"]
+
+        obsolete_assets = SBFunc.is_asset_obsolete(asset_list_names, biome)
+        for asset in obsolete_assets:
+            bpy.data.objects.remove(bpy.data.objects[obsolete_assets[asset]])
+
+        SBFunc.objects_list_property(biome, obsolete_assets)
+
+        master_collection_layer.children[SFunc.strew_collection_assets].exclude = True  # disable collections
+
         return {'FINISHED'}
 
 
@@ -572,7 +561,7 @@ class RemoveBiome(Operator):
         terrain_object = bpy.context.active_object
         biome = bpy.context.active_object[SFunc.terrain_property]
 
-        StrewBiomeFunctions.desassign_biome(self, context, biome, terrain_object)
+        SBFunc.desassign_biome(biome, terrain_object)
         return {'FINISHED'}
 
 
@@ -588,7 +577,7 @@ class AssignBiome(Operator):
         terrain_object = bpy.context.active_object                         # get future terrain
         selected_biome = SFunc.selected_biome(context)                     # get biome name
 
-        StrewBiomeFunctions.apply_geometry_nodes(terrain_object, selected_biome, True)  # assign biome
+        SBFunc.apply_geometry_nodes(terrain_object, selected_biome, True)  # assign biome
         return {'FINISHED'}
 
 
@@ -622,7 +611,6 @@ classes = [
     SCENE_OT_source_populate,       # strew.source_populate
     # --- import & export ---
     ImportBiome,                    # strew.import_biome
-    ImportAsset,                    # strew.import_assets
     # --- Manage terrains ---
     ReplaceBiome,                   # strew.replace_biome
     UpdateBiome,                    # strew.update_biome

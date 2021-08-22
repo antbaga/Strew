@@ -62,6 +62,22 @@
                     "description": "Custom Asset",
                     "category": "grass",
                     "objects": {}
+                },
+                {
+                    "file": "%CUSTOM%Cube.blend",
+                    "name": "Cube",
+                    "type": "Object",
+                    "description": "Custom Asset",
+                    "category": "grass",
+                    "objects": {}
+                },
+                {
+                    "file": "D:\\Users\\Asloric\\Desktop\\untitle__d.blend",
+                    "name": "Cube",
+                    "type": "Object",
+                    "description": "Custom Asset",
+                    "category": "grass",
+                    "objects": {}
                 }
             ]
         }

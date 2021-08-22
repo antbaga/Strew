@@ -3,7 +3,9 @@ from . import StrewUi, StrewManOperators, __init__, StrewProps, StrewFunctions
 import json
 
 active_biome = ""
-
+imported_assets_property = "Strew_Imported_Assets"
+imported_assets_list = {}
+imported_biomes_property = "Strew_Imported_Biomes"
 
 #####################################################################################
 #
@@ -75,37 +77,43 @@ def setup_lod_collection(biome_name, category, strew_collection):
     return category_coll, lod_0, lod_1, lod_2, lod_3, proxy
 
 
+def create_biome_object(biome_name, is_imported):
+    # CALLED FROM:
+    #   apply_geometry_nodes     (Function)
+
+    # Checks if biome has been previously imported or not. returns the biome fully configured
+
+    if is_imported:
+        strew_biome = bpy.data.node_groups[biome_name]                                      # get imported biome
+        biome = bpy.data.objects[biome_name]
+    else:
+
+        Mesh = bpy.data.meshes.new(biome_name + "_terrain")                                 # Create mesh
+        biome = bpy.data.objects.new(biome_name, Mesh)                                      # Create object
+        biome[StrewFunctions.terrain_property] = biome_name                                 # Apply properties
+        bpy.data.collections[StrewFunctions.strew_collection_biomes].objects.link(biome)    # Link to scene
+        biome.hide_select = True                                                            # make un-selectable
+        geometry_node_master = StrewFunctions.geometry_node_master                          # get initial geo_node
+        modifier = biome.modifiers.new                                                      # create modifier
+        strew_terrain = modifier(name='Strew_Terrain', type='NODES')                        # configure modifier
+        strew_biome = bpy.data.node_groups[geometry_node_master].copy()                     # create proper geo_node
+        strew_biome.name = biome_name                                                       # rename geo_node
+        strew_terrain.node_group = strew_biome                                              # apply geo_node to modifier
+
+    return strew_biome, biome
+
+
 def apply_geometry_nodes(terrain_object, biome_name, is_imported):
     # CALLED FROM:
     #   ImportBiome     (Operator)
     #   AssignBiome     (Operator)
 
-    terrain_name_property = StrewFunctions.terrain_property
+    strew_biome, biome_object = create_biome_object(biome_name, is_imported)            # get biome object
+    terrain_object[StrewFunctions.terrain_property] = biome_name                # add terrain property to terrain object
+    new_object_node = add_object_node(strew_biome, terrain_object)                      # assign terrain object to biome
+    strew_biome.nodes[new_object_node.name].inputs[0].default_value = terrain_object    # link the new node to join mesh
 
-    if is_imported:
-        strew_biome = bpy.data.node_groups[biome_name]
-    else:
-        Mesh = bpy.data.meshes.new(biome_name + "_terrain")
-        biome = bpy.data.objects.new(biome_name, Mesh)
-        biome[terrain_name_property] = biome_name
-
-        bpy.data.collections[StrewFunctions.strew_collection_biomes].objects.link(biome)
-        geometry_node_master = StrewFunctions.geometry_node_master
-        # create modifier
-        modifier = biome.modifiers.new
-        strew_terrain = modifier(name='Strew_Terrain', type='NODES')
-        # create node group
-        strew_biome = bpy.data.node_groups[geometry_node_master].copy()
-        strew_biome.name = biome_name
-        strew_terrain.node_group = strew_biome
-
-    # assign terrain property to object
-    terrain_object[terrain_name_property] = biome_name
-    # assign object to biome
-    new_object_node = add_object_node(strew_biome, terrain_object)
-    strew_biome.nodes[new_object_node.name].inputs[0].default_value = terrain_object
-
-    return strew_biome
+    return strew_biome, biome_object
 
 
 def assign_collection(biome, lod0_col, lod1_col, lod2_col, lod3_col, proxy_col, asset_type):
@@ -139,9 +147,9 @@ def add_object_node(biome, terrain_object):
     return object_info_node
 
 
-def desassign_biome(self, context, biome, terrain_object):
+def desassign_biome(biome, terrain_object):
     # CALLED FROM:
-    #   AssignBiome     (Operator)
+    #   RemoveBiome     (Operator)
 
     node_tree = bpy.data.node_groups[biome]
     terrain_name_property = StrewFunctions.terrain_property
@@ -154,6 +162,7 @@ def desassign_biome(self, context, biome, terrain_object):
     node_tree.nodes["Switch.028"].inputs[0].default_value = True
 
     terrain_object[terrain_name_property] = None
+
 
 #####################################################################################
 #
@@ -191,17 +200,18 @@ def switch_active_biome(new_biome):
 
 
 def is_biome_imported(biome_name):
-    if bpy.context.scene.get('Strew_Imported_Biomes') is not None:
-
-        imported_biomes = bpy.context.scene.get('Strew_Imported_Biomes').to_dict()
+    if bpy.context.scene.get(imported_biomes_property) is not None:
+        imported = False
+        imported_biomes = bpy.context.scene.get(imported_biomes_property).to_dict()
         for biome in imported_biomes:
-            print(biome_name)
-            print(imported_biomes[biome][0])
             if biome_name == imported_biomes[biome][0]:
                 imported = True
             else:
                 imported = False
+
         return imported
+    else:
+        return False
 
 
 def imported_biome_list(biome_name):
@@ -211,15 +221,15 @@ def imported_biome_list(biome_name):
         if biome[0] == biome_name:
             biome_list[biome[0]] = biome[0], biome[1], biome[2]
 
-    if bpy.context.scene.get('Strew_Imported_Biomes') is not None:
-        imported_biomes = bpy.context.scene.get('Strew_Imported_Biomes').to_dict()
+    if bpy.context.scene.get(imported_biomes_property) is not None:
+        imported_biomes = bpy.context.scene.get(imported_biomes_property).to_dict()
         for biome in imported_biomes:
             if biome not in biome_list:
                 biome_list[biome] = imported_biomes[biome][0], imported_biomes[biome][1], imported_biomes[biome][2]
             else:
                 return "already imported"
 
-    bpy.context.scene["Strew_Imported_Biomes"] = biome_list
+    bpy.context.scene[imported_biomes_property] = biome_list
 
 
 def get_imported_biomes_list():
@@ -232,6 +242,98 @@ def get_imported_biomes_list():
                 biome_list.append((imported_biomes[biome][0], imported_biomes[biome][1], imported_biomes[biome][2]))
 
     return biome_list
+
+
+def format_asset_list(asset_list, biome_name):
+    # CALLED FROM:
+    #   UpdateBiome     (Operator)
+
+    # Reformats the assets list to match the imported list format
+
+    formated_asset_list = {}
+
+    for asset in asset_list:
+        category = asset["category"]
+        if asset["type"] == "Collection":
+            for number, lod in enumerate(asset['objects']):
+                lod_number = list(asset['objects'].keys())[number]
+                asset_name = asset['objects'][lod]
+                collection = biome_name + "_" + category + "_" + lod_number
+                formated_asset_list[collection + "\\" + asset_name] = {'name': asset_name,
+                                                    'file': asset['file'],
+                                                    'type': asset['type'],
+                                                    'coll': collection,
+                                                    'fullname': collection + "\\" + asset_name}
+
+        elif asset["type"] == "Object":
+            lod = "PROXY"
+            collection = biome_name + "_" + category + "_" + lod
+            formated_asset_list[collection + "\\" + asset['name']] = {'name': asset['name'],
+                                                   'file': asset['file'],
+                                                   'type': asset['type'],
+                                                   'coll': collection,
+                                                   'fullname': collection + "\\" + asset['name']}
+
+    return formated_asset_list
+
+
+def is_asset_imported(asset, biome):
+    # CALLED FROM:
+    #   UpdateBiome     (Operator)
+
+    # checks if submitted asset is imported or not.
+    imported = False
+    if biome.get(imported_assets_property) is not None:
+        imported_list = biome.get(imported_assets_property).to_dict()
+
+        for imported_asset in imported_list:
+            if imported_asset == asset:
+                imported = True
+                return imported
+        return imported
+    else:
+        objects_list_property(biome)
+
+
+def is_asset_obsolete(asset_list, biome):
+    # CALLED FROM:
+    #   UpdateBiome     (Operator)
+
+    # checks if submitted asset has to be removed or not.
+    is_obsolete = True
+    obsolete_assets = {}
+    imported_list = biome.get(imported_assets_property).to_dict()
+
+    for imported_asset in imported_list:
+        for asset in asset_list:
+
+            if imported_asset == asset_list[asset]:
+                is_obsolete = False
+
+        if is_obsolete:
+            obsolete_assets[imported_asset] = imported_list[imported_asset]
+
+    return obsolete_assets
+
+
+def objects_list_property(biome, asset_list={}):
+    # CALLED FROM:
+    #   ImportBiome     (Operator)
+    #   UpdateBiome     (Operator)
+
+    is_obsolete = True
+
+    if biome.get(imported_assets_property) is not None:                     # biome already imported
+        imported_list = biome.get(imported_assets_property).to_dict()       # get list of imported assets
+        for imported_asset in imported_list:                                # for each asset newly imported
+            for asset in asset_list:
+                if imported_asset == asset_list[asset]:
+                    is_obsolete = False
+            if not is_obsolete:
+                imported_assets_list[imported_asset] = imported_assets[imported_asset]  # add it to list
+
+    biome[imported_assets_property] = imported_assets_list                  # apply list to property
+    imported_assets_list.clear()                                            # clear list
 
 
 #####################################################################################
