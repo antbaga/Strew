@@ -12,74 +12,7 @@
             "name": "custom",
             "identifier": "%STREW%custom",
             "description": "Custom assets made by user.",
-            "assets": [
-                {
-                    "file": "%CUSTOM%Cube.blend",
-                    "name": "Cube",
-                    "type": "Collection",
-                    "description": "Custom Asset",
-                    "category": "grass",
-                    "objects": {
-                        "LOD_0": "Cube",
-                        "LOD_1": "Cube",
-                        "LOD_2": "Cube",
-                        "LOD_3": "Cube",
-                        "PROXY": "Cube"
-                    }
-                },
-                {
-                    "file": "%CUSTOM%Cube.blend",
-                    "name": "Cube",
-                    "type": "Collection",
-                    "description": "Custom Asset",
-                    "category": "grass",
-                    "objects": {
-                        "LOD_0": "Cube",
-                        "LOD_1": "Cube",
-                        "LOD_2": "Cube",
-                        "LOD_3": "Cube",
-                        "PROXY": "Cube"
-                    }
-                },
-                {
-                    "file": "%CUSTOM%Cube.blend",
-                    "name": "Cube",
-                    "type": "Collection",
-                    "description": "Custom Asset",
-                    "category": "grass",
-                    "objects": {
-                        "LOD_0": "Cube",
-                        "LOD_1": "Cube",
-                        "LOD_2": "Cube",
-                        "LOD_3": "Cube",
-                        "PROXY": "Cube"
-                    }
-                },
-                {
-                    "file": "%CUSTOM%Cube.blend",
-                    "name": "Cube",
-                    "type": "Object",
-                    "description": "Custom Asset",
-                    "category": "grass",
-                    "objects": {}
-                },
-                {
-                    "file": "%CUSTOM%Cube.blend",
-                    "name": "Cube",
-                    "type": "Object",
-                    "description": "Custom Asset",
-                    "category": "grass",
-                    "objects": {}
-                },
-                {
-                    "file": "D:\\Users\\Asloric\\Desktop\\untitle__d.blend",
-                    "name": "Cube",
-                    "type": "Object",
-                    "description": "Custom Asset",
-                    "category": "grass",
-                    "objects": {}
-                }
-            ]
+            "assets": []
         }
     ],
     "%STREW%rocks": [
@@ -90,8 +23,8 @@
             "assets": [
                 {
                     "file": "%STREW%rocks.blend",
-                    "type": "Collection",
                     "name": "Variante 1",
+                    "type": "Collection",
                     "description": "less beautiful cube",
                     "category": "rocks",
                     "objects": {
@@ -104,8 +37,8 @@
                 },
                 {
                     "file": "%STREW%rocks.blend",
-                    "type": "Collection",
                     "name": "Variante 2",
+                    "type": "Collection",
                     "description": "even less beautiful cube",
                     "category": "rocks",
                     "objects": {

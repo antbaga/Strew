@@ -374,11 +374,11 @@ def add_asset(self, context, target, biome_name, asset_file, asset_name, asset_t
     preset_folder_path = get_path(self, context, 'preset')              # get the path of file
 
     if '"' in asset_name:                                                # prevents " in the file
-        print('Please, ensure there is no " in the name of the asset.')  # as it will cause problems
+        asset_name = asset_name.replace("\"", "_")                      # as it will cause problems
     if target == "source":
         with open(preset_folder_path + source_file, 'r') as json_file:       # Read the biomes file to build list
             biomes = json.load(json_file)
-    else:
+    elif target == "biome":
         with open(preset_folder_path + biome_file, 'r') as json_file:       # Read the biomes file to build list
             biomes = json.load(json_file)
 
@@ -400,26 +400,45 @@ def add_asset(self, context, target, biome_name, asset_file, asset_name, asset_t
             json.dump(biomes, json_file, indent=4)
 
 
-def remove_asset_id(self, context, biome_name, asset_id):
+def remove_asset_id(self, context, target, biome_name, asset_id):
+    # CALLED FROM:
+    #   RemoveAssetManager   (Operator)
+    #   EditAsset            (Operator)
+
     global biome_file                                                   # get the name of file
     preset_folder_path = get_path(self, context, 'preset')              # get the path of file
 
-    with open(preset_folder_path + biome_file, 'r') as json_file:       # Read the biomes file to build list
-        biomes = json.load(json_file)
+    if target == "source":
+        with open(preset_folder_path + source_file, 'r') as json_file:       # Read the biomes file to build list
+            biomes = json.load(json_file)
+    elif target == "biome":
+        with open(preset_folder_path + biome_file, 'r') as json_file:       # Read the biomes file to build list
+            biomes = json.load(json_file)
 
     for data in biomes[biome_name]:                                     # remove the asset from the list
         del data['assets'][asset_id]
 
-    with open(preset_folder_path + biome_file, 'w') as json_file:       # rewrite the file
-        json.dump(biomes, json_file, indent=4)
+    if target == "source":
+        with open(preset_folder_path + source_file, 'w') as json_file:  # rewrite the file
+            json.dump(biomes, json_file, indent=4)
+    else:
+        with open(preset_folder_path + biome_file, 'w') as json_file:  # rewrite the file
+            json.dump(biomes, json_file, indent=4)
 
 
-def remove_asset(self, context, biome_name, asset_name, asset_file):
+def remove_asset(self, context, target, biome_name, asset_name, asset_file):
+    # CALLED FROM:
+    #   RemoveAssetView   (Operator)
+
     global biome_file                                                   # get the name of file
     preset_folder_path = get_path(self, context, 'preset')              # get the path of file
 
-    with open(preset_folder_path + biome_file, 'r') as json_file:       # Read the biomes file to build list
-        biomes = json.load(json_file)
+    if target == "source":
+        with open(preset_folder_path + source_file, 'r') as json_file:       # Read the biomes file to build list
+            biomes = json.load(json_file)
+    elif target == "biome":
+        with open(preset_folder_path + biome_file, 'r') as json_file:       # Read the biomes file to build list
+            biomes = json.load(json_file)
 
     for data in biomes[biome_name]:                                     # remove the asset from the list
         for asset in data['assets']:
@@ -427,16 +446,18 @@ def remove_asset(self, context, biome_name, asset_name, asset_file):
                 if asset['file'] == asset_file:
                     del asset
 
-    with open(preset_folder_path + biome_file, 'w') as json_file:       # rewrite the file
-        json.dump(biomes, json_file, indent=4)
+    if target == "source":
+        with open(preset_folder_path + source_file, 'w') as json_file:       # rewrite the file
+            json.dump(biomes, json_file, indent=4)
+    else:
+        with open(preset_folder_path + biome_file, 'w') as json_file:  # rewrite the file
+            json.dump(biomes, json_file, indent=4)
 
 
-def export_asset(self, context, assets):
+def export_asset(self, context, assets, asset_name):
     # CALLED FROM:
     #   format_asset    (Function)
 
-    asset_name = bpy.context.scene.SourceLibrary.collection[bpy.context.scene.SourceLibrary.active_user_index].name  # Get the asset name
-    asset = {bpy.context.scene.objects[asset_name]}                                                  # get the actual object
     path = get_path(self, context, 'custom_file')                                                      # find the blend target
 
     bpy.data.libraries.write(f'{path}{asset_name}.blend', assets, fake_user=True)                         # export to blend
@@ -458,17 +479,32 @@ def format_asset(self, context, asset):
 
     if asset.globalsave:
         filepath = "%CUSTOM%" + asset.asset_name + ".blend"
-        export_asset(self, context, assets)  # does the exportation to file
+        export_asset(self, context, assets, asset.asset_name)  # does the exportation to file
     else:
         if bpy.data.filepath == "":
             print("can't create asset from unsaved blend. Asset will be save globally")
             filepath = "%CUSTOM%" + asset.asset_name + ".blend"
-            export_asset(self, context, assets)
+            export_asset(self, context, assets, asset.asset_name)
         else:
             filepath = bpy.data.filepath
 
     return asset_type, objects_list, filepath
 
+
+def format_edit_asset(self, context, asset):
+    # CALLED FROM:
+    #   SaveAsset   (Operator)
+
+    if asset.asset_type:
+        asset_type = "Collection"
+        objects_list = {"LOD_0": asset.lod_0, "LOD_1": asset.lod_1, "LOD_2": asset.lod_2,
+                        "LOD_3": asset.lod_3, "PROXY": asset.proxy}
+        assets = {asset.lod_0, asset.lod_1, asset.lod_2, asset.lod_3, asset.proxy}
+    else:
+        asset_type = "Object"
+        objects_list = "{}"
+
+    return asset_type, objects_list
 
 #####################################################################################
 #

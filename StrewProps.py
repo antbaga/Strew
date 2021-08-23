@@ -148,9 +148,9 @@ class SMSAsset(PropertyGroup):
     objects: StringProperty()
 
 
-class SMSList(PropertyGroup):
-    collection: CollectionProperty(
-        name="SMSA",
+class LibraryList(PropertyGroup):
+    asset_library: CollectionProperty(
+        name="Assets Library",
         type=SMSAsset)
     active_user_index: IntProperty(
     )
@@ -280,6 +280,64 @@ class SaveAsset(PropertyGroup):
         )
 
 
+class EditAsset(PropertyGroup):
+    def enum_target_libraries(self, context):
+        global libraries_list
+        libraries_list.clear()
+        thumb_list = StrewFunctions.get_source_files(self, context)
+        for source in thumb_list:
+            if source[0] != "%STREW%This_file":
+                libraries_list.append(source)
+        return libraries_list
+
+    asset_name: StringProperty(
+        default="",
+        name="Name"
+    )
+    asset_description: StringProperty(
+        default="",
+        name="Description"
+    )
+    asset_category: StringProperty(
+        default="",
+        name="Category"
+    )
+    asset_type: BoolProperty(
+        default=False,
+        name="Use LOD"
+    )
+    lod_0: StringProperty(
+        name="LOD 0",
+        default="",
+    )
+    lod_1: StringProperty(
+        name="LOD 1",
+        default="",
+    )
+    lod_2: StringProperty(
+        name="LOD 2",
+        default="",
+    )
+    lod_3: StringProperty(
+        name="LOD 3",
+        default="",
+    )
+    proxy: StringProperty(
+        name="Proxy",
+        default="",
+    )
+    file: StringProperty(
+        name="File path",
+        description="Path to the blender file containing the asset"
+    )
+    target_library: EnumProperty(
+        name="Target library",
+        description="Library in which the asset will be saved",
+        items=enum_target_libraries,
+        default=1
+        )
+
+
 class BiomeNamesFields(PropertyGroup):
     new_name: bpy.props.StringProperty(
         name="name",
@@ -310,12 +368,13 @@ classes = [
     SMAAsset,
     SMAList,
     SMSAsset,
-    SMSList,
+    LibraryList,
     # --- Panels ---
     BiomeNamesFields,
     PanelSwitch,
     # --- Save Assets ---
     SaveAsset,
+    EditAsset,
 ]
 
 
@@ -328,8 +387,9 @@ def register():
     bpy.types.Scene.StrewSourceDrop = PointerProperty(type=StrewSourceProperty)
     bpy.types.Scene.StrewImportedBiomes = PointerProperty(type=StrewImportedBiomes)
     bpy.types.Scene.StrewSaveAsset = PointerProperty(type=SaveAsset)
+    bpy.types.Scene.StrewEditAsset = PointerProperty(type=EditAsset)
     bpy.types.Scene.SMAL = PointerProperty(type=SMAList)
-    bpy.types.Scene.SourceLibrary = PointerProperty(type=SMSList)
+    bpy.types.Scene.SourceLibrary = PointerProperty(type=LibraryList)
 
 
 def unregister():
@@ -340,6 +400,7 @@ def unregister():
     del bpy.types.Scene.StrewPresetDrop
     del bpy.types.Scene.StrewSourceDrop
     del bpy.types.Scene.StrewSaveAsset
+    del bpy.types.Scene.StrewEditAsset
     del bpy.types.Scene.StrewImportedBiomes
     del bpy.types.Scene.SMAL
-    del bpy.types.Scene.SMSL
+    del bpy.types.Scene.SourceLibrary

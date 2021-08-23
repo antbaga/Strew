@@ -2,6 +2,7 @@ from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, EnumProperty, BoolProperty, IntProperty
 from . import __init__, StrewUi, StrewProps, StrewBiomeFunctions as SBFunc
 from . import StrewFunctions as SFunc
+import json
 import addon_utils
 import bpy
 import os
@@ -283,7 +284,7 @@ class SaveAsset(Operator):
 
         # Fill in the fields for default value
         asset_props = context.scene.StrewSaveAsset
-        asset = bpy.context.scene.SourceLibrary.collection[bpy.context.scene.SourceLibrary.active_user_index]
+        asset = bpy.context.scene.SourceLibrary.asset_library[bpy.context.scene.SourceLibrary.active_user_index]
 
         asset_props.asset_name = asset["name"]
         asset_props.asset_description = asset["description"]
@@ -316,7 +317,7 @@ class AddAssetManager(Operator):
 
     def execute(self, context):
         cts = bpy.context.scene
-        asset = cts.SourceLibrary.collection[cts.SourceLibrary.active_user_index]
+        asset = cts.SourceLibrary.asset_library[cts.SourceLibrary.active_user_index]
 
         biome_name = SFunc.selected_biome(context)
 
@@ -371,7 +372,7 @@ class RemoveAssetManager(Operator):
         asset_id = cts.SMAL.active_user_index                        # find the object id
         biome = cts.StrewPresetDrop.StrewPresetDropdown              # find the biome
 
-        SFunc.remove_asset_id(self, context, biome, asset_id)  # remove the asset
+        SFunc.remove_asset_id(self, context, 'biome', biome, asset_id)  # remove the asset
         SCENE_OT_list_populate.execute(self, context)                # update the list in UI
 
         return {'FINISHED'}
@@ -386,8 +387,133 @@ class RemoveAssetView(Operator):
         file_name = bpy.path.basename(bpy.data.filepath)
 
         for obj in bpy.context.selected_objects:
-            SFunc.remove_asset(self, context, biome, obj.name, file_name)
+            SFunc.remove_asset(self, context, "biome", biome, obj.name, file_name)
         return {'FINISHED'}
+
+
+#####################################################################################
+#
+#       ADD OR REMOVE ASSETS FROM LIBRARY
+#
+#####################################################################################
+
+
+class EditAsset(Operator):
+    bl_idname = "strew.edit_asset"
+    bl_label = "Edit asset"
+
+    def draw(self, context):
+        asset_props = context.scene.StrewEditAsset
+
+        lay = self.layout
+        col = lay.column(align=True)
+        row = col.row(align=True)
+        row.prop(asset_props, "target_library")
+        col.separator(factor=2.0)
+        col.prop(asset_props, "asset_name")
+        col.prop(asset_props, "asset_description")
+        col.prop(asset_props, "asset_category")
+        col.prop(asset_props, "asset_type")
+        if asset_props.asset_type:
+            col.prop(asset_props, "lod_0")
+            col.prop(asset_props, "lod_1")
+            col.prop(asset_props, "lod_2")
+            col.prop(asset_props, "lod_3")
+            col.prop(asset_props, "proxy")
+        else:
+            col.prop(asset_props, "proxy", text="object")
+
+    def modal(self, context, event):
+        self.report({"ERROR"}, "Can not edit Strew assets or assets from 'this file' library.")
+        return{'RUNNING_MODAL'}
+
+    def execute(self, context):
+
+        asset = context.scene.StrewEditAsset
+        source_id = context.scene.SourceLibrary.active_user_index                 # find the object id
+        asset_type, objects_list = SFunc.format_edit_asset(self, context, asset)
+
+        SFunc.remove_asset_id(self, context, "source", SFunc.selected_source("name"), source_id)  # remove the asset
+        SFunc.add_asset(self, context, "source", asset.target_library,
+                        asset.file,
+                        asset.asset_name,
+                        asset_type,
+                        asset.asset_description,
+                        asset.asset_category,
+                        str(objects_list))
+
+        SCENE_OT_source_populate.execute(self, context)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        asset_props = context.scene.StrewEditAsset
+        asset = bpy.context.scene.SourceLibrary.asset_library[bpy.context.scene.SourceLibrary.active_user_index]
+
+        if not SFunc.selected_source('name') == "%STREW%This_file": # and not "%STREW%" in asset["file"]:
+            # Fill in the fields for default value
+
+            asset_props.asset_name = asset["name"]
+            asset_props.asset_description = asset["description"]
+            asset_props.asset_category = asset["category"]
+            asset_props.target_library = SFunc.selected_source('name')
+            asset_props.file = asset["file"]
+            if asset["type"] == "Collection":
+                asset_props.asset_type = True
+                objects = json.loads(asset["objects"].replace("'", "\""))
+                asset_props.lod_0 = objects["LOD_0"]
+                asset_props.lod_1 = objects["LOD_1"]
+                asset_props.lod_2 = objects["LOD_2"]
+                asset_props.lod_3 = objects["LOD_3"]
+                asset_props.proxy = objects["PROXY"]
+            elif asset['type'] == "Object":
+                asset_props.asset_type = False
+                asset_props.lod_0 = ""
+                asset_props.lod_1 = ""
+                asset_props.lod_2 = ""
+                asset_props.lod_3 = ""
+                asset_props.proxy = asset["name"]
+
+            context.window_manager.invoke_props_dialog(self)
+            return {"RUNNING_MODAL"}
+        else:
+            self.report({"ERROR"}, "Can not edit Strew assets or assets from 'this file' library.")
+            return {"CANCELLED"}
+
+
+class RemoveAssetLibrary(Operator):
+    bl_idname = "strew.remove_library_asset"
+    bl_label = "Remove asset"
+
+    label = BoolProperty(default = True)
+
+    def draw(self, context):
+        lay = self.layout
+        col = lay.column(align=True)
+        if self.label:
+            col.label(text=f"Remove this asset from library?")
+            col.label(text="this can not be undone.")
+        else:
+            col.label(text="Can not remove Strew assets or assets from this file")
+
+    def execute(self, context):
+        asset = bpy.context.scene.SourceLibrary.asset_library[bpy.context.scene.SourceLibrary.active_user_index]
+
+        if not SFunc.selected_source('name') == "%STREW%This_file" and not "%STREW%" in asset["file"]:
+            source_id = context.scene.SourceLibrary.active_user_index  # find the object id
+
+            SFunc.remove_asset_id(self, context, "source", SFunc.selected_source("name"), source_id)  # remove the asset
+            SCENE_OT_source_populate.execute(self, context)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        asset = bpy.context.scene.SourceLibrary.asset_library[bpy.context.scene.SourceLibrary.active_user_index]
+        if not SFunc.selected_source('name') == "%STREW%This_file" and not "%STREW%" in asset["file"]:
+            context.window_manager.invoke_props_dialog(self)
+            return {"RUNNING_MODAL"}
+
+        else:
+            self.report({"ERROR"}, "Can not edit Strew assets or assets from 'this file' library.")
+            return {"CANCELLED"}
 
 
 #####################################################################################
@@ -425,25 +551,38 @@ class SCENE_OT_source_populate(Operator):
     # else, it will display the files from the strew library
 
     def execute(self, context):
-        context.scene.SourceLibrary.collection.clear()
+        context.scene.SourceLibrary.asset_library.clear()
         biome = SFunc.selected_source("name")
 
         if biome == "%STREW%This_file":
             blend = bpy.context.blend_data.filepath
-            AssetList = bpy.context.scene.objects
-            for Asset in AssetList:
-                item = context.scene.SourceLibrary.collection.add()
-                item.name = Asset.name
-                item.file = blend
-                item.description = "Custom Asset"
-                item.type = "Object"
-                item.category = "grass"     # TODO: ask the user what category it is
-                item.objects = "{}"
+            asset_list = bpy.context.scene.objects
+            imported_assets_list = []
+
+            # prevents displaying strew assets in this file library
+            if bpy.context.scene.get(SBFunc.imported_biomes_property) is not None:
+                biomes_list = bpy.context.scene.get(SBFunc.imported_biomes_property).to_dict()
+                for biome in biomes_list:
+                    biome_object = bpy.data.objects[biomes_list[biome][0]]
+                    imported_assets = biome_object.get(SBFunc.imported_assets_property).to_dict()
+                    imported_assets_list.append(biome_object)
+                    for asset in imported_assets:
+                        imported_assets_list.append(bpy.data.objects[imported_assets[asset]])
+
+            for asset in asset_list:
+                if asset.type == "MESH" and asset not in imported_assets_list:
+                    item = context.scene.SourceLibrary.asset_library.add()
+                    item.name = asset.name
+                    item.file = blend
+                    item.description = "Custom Asset"
+                    item.type = "Object"
+                    item.category = "grass"
+                    item.objects = "{}"
             return {'FINISHED'}
         else:
             AssetList = SFunc.get_sources_assets(self, context, biome)
             for Asset in AssetList:
-                item = context.scene.SourceLibrary.collection.add()
+                item = context.scene.SourceLibrary.asset_library.add()
                 item.name = Asset['name']
                 item.description = Asset['description']
                 item.file = Asset['file']
@@ -606,6 +745,8 @@ classes = [
     RemoveAssetManager,             # strew.remove_asset_manager
     RemoveAssetView,                # strew.remove_asset_view
     SaveAsset,                      # strew.save_asset
+    EditAsset,                      # strew.edit_asset
+    RemoveAssetLibrary,             # strew.remove_library_asset
     # --- ui list updates ---
     SCENE_OT_list_populate,         # strew.list_populate
     SCENE_OT_source_populate,       # strew.source_populate

@@ -71,9 +71,10 @@ class StrewPreferences(AddonPreferences):
             row.scale_x = 0.90
             row.operator("strew.source_populate", text="refresh list")
             row = box.row()
-            row.separator(factor=0.85)
+            row.operator("strew.edit_asset", text="Edit asset")
+            row.operator("strew.remove_library_asset", text="Remove asset")
             row = box.row()
-            row.template_list("SRCFILES_UL_List", "", scene.SourceLibrary, "collection", scene.SourceLibrary, "active_user_index", rows=25)
+            row.template_list("SRCFILES_UL_List", "", scene.SourceLibrary, "asset_library", scene.SourceLibrary, "active_user_index", rows=20)
 
             #######################################
             #   CENTRAL BUTTONS
@@ -102,31 +103,13 @@ class StrewPreferences(AddonPreferences):
 
             row = box.row()
             split_row = row.split()
-            split_row.scale_x = 33.4
-            split_row.separator()
-            split_row = row.split()
-            split_row.operator("strew.add_biome_popup", text="New biome")
-
-            row = box.row()
-            split_row = row.split()
-            split_row.scale_x = 33.4
-            split_row.separator()
-            split_row = row.split()
-            split_row.operator("strew.remove_biome_popup", text="Remove biome")
-
-            row = box.row()
-            split_row = row.split()
-            split_row.scale_x = 33.4
-            split_row.separator()
-            split_row = row.split()
+            split_row.scale_x = .7
             split_row.operator("strew.clone_biome_popup", text="Clone biome")
-
-            row = box.row()
-            split_row = row.split()
-            split_row.scale_x = 33.4
-            split_row.separator()
-            split_row = row.split()
             split_row.operator("strew.rename_biome_popup", text="edit biome")
+            split_row = row.split()
+            split_row.scale_x = .7
+            split_row.operator("strew.add_biome_popup", text="New biome")
+            split_row.operator("strew.remove_biome_popup", text="Remove biome")
 
             row = box.row()
             row.template_list("PRESET_UL_List", "", scene.SMAL, "collection", scene.SMAL, "active_user_index", rows=20)
