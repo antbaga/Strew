@@ -1,27 +1,4 @@
 {
-    "Biome 01": [
-        {
-            "name": "Biome 01",
-            "identifier": "Biome 01",
-            "description": "Clone of Biome 01",
-            "assets": [
-                {
-                    "file": "%STREW%rocks.blend",
-                    "name": "Variante 1",
-                    "type": "Collection",
-                    "description": "less beautiful cube",
-                    "category": "rocks",
-                    "objects": {
-                        "LOD_0": "Espece 1_Variante 1_LOD0",
-                        "LOD_1": "Espece 1_Variante 1_LOD0",
-                        "LOD_2": "Espece 1_Variante 1_LOD0",
-                        "LOD_3": "Espece 1_Variante 1_LOD0",
-                        "PROXY": "Espece 1_Variante 1_LOD0"
-                    }
-                }
-            ]
-        }
-    ],
     "Biome 03": [
         {
             "name": "Biome 03",
@@ -47,12 +24,41 @@
             "assets": []
         }
     ],
-    "New Biome": [
+    "Biome 01": [
         {
-            "name": "New Biome",
-            "identifier": "New Biome",
-            "description": "Description of New biome",
-            "assets": []
+            "name": "Biome 01",
+            "identifier": "Biome 01",
+            "description": "Biome 01",
+            "assets": [
+                {
+                    "file": "%STREW%rocks.blend",
+                    "name": "Variante 1",
+                    "type": "Collection",
+                    "description": "less beautiful cube",
+                    "category": "rocks",
+                    "objects": {
+                        "LOD_0": "Espece 1_Variante 1_LOD0",
+                        "LOD_1": "Espece 1_Variante 1_LOD0",
+                        "LOD_2": "Espece 1_Variante 1_LOD0",
+                        "LOD_3": "Espece 1_Variante 1_LOD0",
+                        "PROXY": "Espece 1_Variante 1_LOD0"
+                    }
+                },
+                {
+                    "file": "%STREW%rocks.blend",
+                    "name": "Variante 2",
+                    "type": "Collection",
+                    "description": "even less beautiful cube",
+                    "category": "rocks",
+                    "objects": {
+                        "LOD_0": "Espece 1_Variante 2_LOD0",
+                        "LOD_1": "Espece 1_Variante 2_LOD0",
+                        "LOD_2": "Espece 1_Variante 2_LOD0",
+                        "LOD_3": "Espece 1_Variante 2_LOD0",
+                        "PROXY": "Espece 1_Variante 2_LOD0"
+                    }
+                }
+            ]
         }
     ]
 }

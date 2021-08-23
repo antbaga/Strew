@@ -66,13 +66,31 @@ class StrewPreferences(AddonPreferences):
             col = layout.row(align=True)
             box = col.box()
 
-            row = box.row()
+            row = box.row(align=True)
             row.prop(context.scene.StrewSourceDrop, "StrewSourceDropdown", text="Asset Library")
-            row.scale_x = 0.90
-            row.operator("strew.source_populate", text="refresh list")
-            row = box.row()
-            row.operator("strew.edit_asset", text="Edit asset")
-            row.operator("strew.remove_library_asset", text="Remove asset")
+            row.operator("strew.source_populate", text="", icon= "FILE_REFRESH")
+
+            row = box.row(align=False)
+
+            # sep = row.column()
+            # sep.scale_x = 5
+            # sep.separator(factor=1.0)
+
+            libs = row.column(align=True)
+            libs.scale_x = 0.5
+            libs_row = libs.row(align=True)
+            libs_row.operator("strew.edit_asset", text="Edit asset", icon="OUTLINER_DATA_GP_LAYER")
+            libs_row.operator("strew.remove_library_asset", text="Remove asset", icon="REMOVE")
+            libs.operator("Strew.save_asset", icon="ADD", text="New asset").add_to_list = False
+
+            ast = row.column(align=True)
+            ast.scale_x = 0.5
+            asl_row = ast.row(align=True)
+            asl_row.operator("strew.rename_biome_popup", text="Edit library", icon="OUTLINER_DATA_GP_LAYER").target = "library"
+            asl_row.operator("strew.remove_biome_popup", text="Remove library", icon="REMOVE").target = "library"
+            ast.operator("strew.add_biome_popup", text="New library", icon="ADD").target = "library"
+
+
             row = box.row()
             row.template_list("SRCFILES_UL_List", "", scene.SourceLibrary, "asset_library", scene.SourceLibrary, "active_user_index", rows=20)
 
@@ -97,19 +115,25 @@ class StrewPreferences(AddonPreferences):
             #######################################
 
             box = col.box()
-            row = box.row()
+            row = box.row(align=True)
             row.label(text='Biome Editor :')
             row.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
 
-            row = box.row()
-            split_row = row.split()
-            split_row.scale_x = .7
-            split_row.operator("strew.clone_biome_popup", text="Clone biome")
-            split_row.operator("strew.rename_biome_popup", text="edit biome")
-            split_row = row.split()
-            split_row.scale_x = .7
-            split_row.operator("strew.add_biome_popup", text="New biome")
-            split_row.operator("strew.remove_biome_popup", text="Remove biome")
+            row = box.row(align=True)
+
+            # sep = row.column()
+            # sep_row = sep.row()
+            # sep_row.scale_x = 5.0
+            # sep_row.separator(factor=1.0)
+            # sep_row.separator(factor=1.0)
+
+            bms = row.column(align=True)
+            bms_row = bms.row(align=True)
+            bms_row.operator("strew.clone_biome_popup", text="Clone biome", icon="DUPLICATE")
+            bms_row.operator("strew.rename_biome_popup", text="Edit biome", icon="OUTLINER_DATA_GP_LAYER").target = "biome"
+            bms_row = bms.row(align=True)
+            bms_row.operator("strew.add_biome_popup", text="New biome", icon="ADD").target = "biome"
+            bms_row.operator("strew.remove_biome_popup", text="Remove biome", icon="REMOVE").target = "biome"
 
             row = box.row()
             row.template_list("PRESET_UL_List", "", scene.SMAL, "collection", scene.SMAL, "active_user_index", rows=20)

@@ -276,30 +276,37 @@ def get_assets_enum(self, context, biome_name):
 #####################################################################################
 
 
-def new_biome(self, context, name, description):
-    global biome_file                                           # get the name of file
+def new_biome(self, context, target, name, description):
+    # CALLED FROM:
+    #   AddBiomePopup   (Operator)
+
     preset_folder_path = get_path(self, context, 'preset')      # get the path of file
+    if target == "library":
+        file = source_file
+    else:
+        file = biome_file
 
     if '"' in str(name):                                        # Ensures there is no hook in name
         name = str(name).replace('"', "'")
     if '"' in str(description):                                 # Ensures there is no hook in description
         description = str(description).replace('"', "'")
 
-    with open(preset_folder_path + biome_file, 'r') as json_file:   # Read the biomes file to build list
+    with open(preset_folder_path + file, 'r') as json_file:   # Read the biomes file to build list
         biomes = json.load(json_file)
-        if name in biomes:                                      # prevents overriding existing biome
-            print("Biome with this name already exists")        # TODO: should inform user
-            pass
-        else:
-            biomes[name] = []                                   # build list that will be sent to json
-            biomes[name].append({
-                "name": name,
-                "identifier": name,
-                "description": description,
-                "assets": []
-            })
 
-    with open(preset_folder_path + biome_file, 'w') as json_file:   # rewrite the file
+    if name in biomes:                                      # prevents overriding existing biome
+        print("Biome with this name already exists")        # TODO: should inform user
+        pass
+    else:
+        biomes[name] = []                                   # build list that will be sent to json
+        biomes[name].append({
+            "name": name,
+            "identifier": name,
+            "description": description,
+            "assets": []
+        })
+
+    with open(preset_folder_path + file, 'w') as json_file:   # rewrite the file
         json.dump(biomes, json_file, indent=4)
 
 
@@ -325,36 +332,45 @@ def clone_biome(self, context, original_biome, name, description):
         json.dump(biomes, json_file, indent=4)
 
 
-def remove_biome(self, context, name):
-    global biome_file  # get the name of file
+def remove_biome(self, context, target, name):
     preset_folder_path = get_path(self, context, 'preset')          # get the path of file
 
-    with open(preset_folder_path + biome_file, 'r') as json_file:   # Read the biomes file to build list
+    if target == "library":
+        file = source_file
+    else:
+        file = biome_file
+
+    with open(preset_folder_path + file, 'r') as json_file:   # Read the biomes file to build list
         biomes = json.load(json_file)
 
     del biomes[name]                                                # delete the biome
 
-    with open(preset_folder_path + biome_file, 'w') as json_file:   # rewrite the file
+    with open(preset_folder_path + file, 'w') as json_file:   # rewrite the file
         json.dump(biomes, json_file, indent=4)
 
 
-def rename_biome(self, context, initial_name, new_name, new_description):
-    global biome_file  # get the name of file
+def rename_biome(self, context, target, initial_name, new_name, new_description):
     preset_folder_path = get_path(self, context, 'preset')          # get the path of file
+
+    if target == "library":
+        file = source_file
+    else:
+        file = biome_file
 
     name = str(new_name).replace('"', "'")                          # Ensures there is no hook in name
     description = str(new_description).replace('"', "'")            # Ensures there is no hook in description
 
-    with open(preset_folder_path + biome_file, 'r') as json_file:   # Read the biomes file to build list
+    with open(preset_folder_path + file, 'r') as json_file:   # Read the biomes file to build list
         biomes = json.load(json_file)
 
     biomes[name] = biomes.pop(initial_name)                         # Clone old biome and delete it
-    for data in biomes[name]:                                       # update infos
-        data['description']: description
-        data['name']: name
-        data['identifier']: name
 
-    with open(preset_folder_path + biome_file, 'w') as json_file:   # rewrite the file
+    for data in biomes[name]:                                       # update infos
+        data['description'] = description
+        data['name'] = name
+        data['identifier'] = name
+
+    with open(preset_folder_path + file, 'w') as json_file:   # rewrite the file
         json.dump(biomes, json_file, indent=4)
 
 

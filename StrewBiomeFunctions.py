@@ -163,7 +163,6 @@ def desassign_biome(biome, terrain_object):
 
     terrain_object[terrain_name_property] = None
 
-
 #####################################################################################
 #
 #       BIOME CREATOR SWITCH
@@ -203,12 +202,11 @@ def is_biome_imported(biome_name):
     if bpy.context.scene.get(imported_biomes_property) is not None:
         imported = False
         imported_biomes = bpy.context.scene.get(imported_biomes_property).to_dict()
+
         for biome in imported_biomes:
             if biome_name == imported_biomes[biome][0]:
                 imported = True
-            else:
-                imported = False
-
+                return imported
         return imported
     else:
         return False

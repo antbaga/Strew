@@ -136,25 +136,34 @@ class InstanceBiomeCompositor(Operator):
 
 class AddBiomePopup(Operator):
     bl_idname = "strew.add_biome_popup"
-    bl_label = "Create new biome"
+    bl_label = "New"
+
+    target: StringProperty(name="", default="")
 
     def draw(self, context):
         biome = context.scene.biomes_names_fields
         lay = self.layout
         c = lay.column(align=True)
-        c.prop(biome, "new_name")
-        c.prop(biome, "new_description")
+        c.prop(biome, "new_name", text="Name")
+        c.prop(biome, "new_description", text="Description")
 
     def execute(self, context):
         biome = context.scene.biomes_names_fields
-        SFunc.new_biome(self, context, biome.new_name, biome.new_description)
-        context.scene.StrewPresetDrop.StrewPresetDropdown = biome.new_name
+        SFunc.new_biome(self, context, self.target, biome.new_name, biome.new_description)
+        if self.target == "library":
+            context.scene.StrewSourceDrop.StrewSourceDropdown = biome.new_name
+        else:
+            context.scene.StrewPresetDrop.StrewPresetDropdown = biome.new_name
         return {'FINISHED'}
 
     def invoke(self, context, event):
         biome = context.scene.biomes_names_fields
-        biome.new_name = "New Biome"
-        biome.new_description = "Description of New biome"
+        if self.target == "library":
+            biome.new_name = "New Library"
+            biome.new_description = "Description of New library"
+        elif self.target == "biome":
+            biome.new_name = "New Biome"
+            biome.new_description = "Description of New biome"
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -187,21 +196,37 @@ class CloneBiomePopup(Operator):
 
 class RemoveBiomePopup(Operator):
     bl_idname = "strew.remove_biome_popup"
-    bl_label = "Remove this biome?"
+    bl_label = "Remove"
+
+    target: StringProperty(name="", default="")
+
+    def draw(self, context):
+        lay = self.layout
+        col = lay.column(align=True)
+        col.label(text=f"Remove this library?")
+        col.label(text="this can not be undone.")
 
     def execute(self, context):
-        biome = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown       # get the biome name
-        SFunc.remove_biome(self, context, biome)                   # remove the biome
-
+        if self.target == "library":
+            biome = bpy.context.scene.StrewSourceDrop.StrewSourceDropdown      # get the biome name
+        else:
+            biome = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown       # get the biome name
+        SFunc.remove_biome(self, context, self.target, biome)                   # remove the biome
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        if self.target == "library":
+            if "%STREW%" in SFunc.selected_source('name'):
+                self.report({"ERROR"}, "Can not remove this library.")
+                return {'FINISHED'}
         return context.window_manager.invoke_props_dialog(self)
 
 
 class RenameBiomePopup(Operator):
     bl_idname = "strew.rename_biome_popup"
-    bl_label = "Rename biome"
+    bl_label = "Rename"
+
+    target: StringProperty(name="", default="")
 
     def draw(self, context):
         properties = context.scene.biomes_names_fields
@@ -212,17 +237,31 @@ class RenameBiomePopup(Operator):
 
     def execute(self, context):
         biome = context.scene.biomes_names_fields                                    # get the infos of biome
-        biome_initial_name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown       # from the popup box
-        SFunc.rename_biome(self, context, biome_initial_name, biome.new_name, biome.new_description)
+        if self.target == "library":
+            initial_name = bpy.context.scene.StrewSourceDrop.StrewSourceDropdown
+        else:
+            initial_name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
+
+        SFunc.rename_biome(self, context, self.target, initial_name, biome.new_name, biome.new_description)
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        biome_prop = context.scene.biomes_names_fields
-        biome_name = SFunc.selected_biome(context)
-        for biome in StrewProps.preset_list_enum:
-            if biome[0] == biome_name:
-                biome_prop.new_name = biome[0]
-                biome_prop.new_description = biome[2]
+        field_prop = context.scene.biomes_names_fields
+        if self.target == "library":
+            if "%STREW%" in SFunc.selected_source('name'):
+                self.report({"ERROR"}, "Can not edit this library.")
+                return {'FINISHED'}
+            library_name = SFunc.selected_source("name")
+            for library in StrewProps.sources_list_enum:
+                if library[0] == library_name:
+                    field_prop.new_name = library[1]
+                    field_prop.new_description = library[2]
+        else:
+            biome_name = SFunc.selected_biome(context)
+            for biome in StrewProps.preset_list_enum:
+                if biome[0] == biome_name:
+                    field_prop.new_name = biome[1]
+                    field_prop.new_description = biome[2]
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -639,19 +678,21 @@ class ReplaceBiome(Operator):
     bl_label = "replace biome"
 
     def execute(self, context):
-        terrain_object = bpy.context.active_object                         # get future terrain
-        selected_biome = SFunc.selected_biome(context)                     # get biome name
-        import_status = SBFunc.is_biome_imported(selected_biome)
-        assigned_biome = bpy.context.active_object[SFunc.terrain_property]
+        terrain_object = bpy.context.active_object                          # get future terrain
+        selected_biome = SFunc.selected_biome(context)                      # get biome name
+        import_status = SBFunc.is_biome_imported(selected_biome)            # checks if biome is imported
+        assigned_biome = terrain_object[SFunc.terrain_property]             # get current biome
 
         if assigned_biome == terrain_object.name:
             print("can not remove biome from this object. please select terrain.")
             return {'FINISHED'}
 
-        RemoveBiome.execute(self, context)
+        SBFunc.desassign_biome(assigned_biome, terrain_object)
         if import_status:
+
             SBFunc.apply_geometry_nodes(terrain_object, selected_biome, import_status)  # assign biome
         else:
+
             ImportBiome.execute(self, context)
         return {'FINISHED'}
 

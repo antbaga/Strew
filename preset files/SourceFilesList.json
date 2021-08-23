@@ -7,14 +7,6 @@
             "assets": []
         }
     ],
-    "%STREW%custom": [
-        {
-            "name": "custom",
-            "identifier": "%STREW%custom",
-            "description": "Custom assets made by user.",
-            "assets": []
-        }
-    ],
     "%STREW%rocks": [
         {
             "name": "rocks",
