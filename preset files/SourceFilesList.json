@@ -15,20 +15,6 @@
             "assets": [
                 {
                     "file": "%STREW%rocks.blend",
-                    "name": "Variante 1",
-                    "type": "Collection",
-                    "description": "less beautiful cube",
-                    "category": "rocks",
-                    "objects": {
-                        "LOD_0": "Espece 1_Variante 1_LOD0",
-                        "LOD_1": "Espece 1_Variante 1_LOD0",
-                        "LOD_2": "Espece 1_Variante 1_LOD0",
-                        "LOD_3": "Espece 1_Variante 1_LOD0",
-                        "PROXY": "Espece 1_Variante 1_LOD0"
-                    }
-                },
-                {
-                    "file": "%STREW%rocks.blend",
                     "name": "Variante 2",
                     "type": "Collection",
                     "description": "even less beautiful cube",
@@ -39,6 +25,20 @@
                         "LOD_2": "Espece 1_Variante 2_LOD0",
                         "LOD_3": "Espece 1_Variante 2_LOD0",
                         "PROXY": "Espece 1_Variante 2_LOD0"
+                    }
+                },
+                {
+                    "file": "%STREW%rocks.blend",
+                    "name": "Variante 1",
+                    "type": "Collection",
+                    "description": "less beautiful cube",
+                    "category": "rocks",
+                    "objects": {
+                        "LOD_0": "Espece 1_Variante 1_LOD0",
+                        "LOD_1": "Espece 1_Variante 1_LOD0",
+                        "LOD_2": "Espece 1_Variante 1_LOD0",
+                        "LOD_3": "Espece 1_Variante 1_LOD0",
+                        "PROXY": "Espece 1_Variante 1_LOD0"
                     }
                 }
             ]
@@ -52,13 +52,21 @@
             "assets": [
                 {
                     "file": "%STREW%plants.blend",
-                    "type": "Object",
                     "name": "Basilic",
+                    "type": "Object",
                     "description": "Beautiful basilic",
                     "category": "grass",
                     "objects": {}
                 }
             ]
+        }
+    ],
+    "New Library": [
+        {
+            "name": "New Library",
+            "identifier": "New Library",
+            "description": "Description of New library",
+            "assets": []
         }
     ]
 }

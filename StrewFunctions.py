@@ -374,6 +374,27 @@ def rename_biome(self, context, target, initial_name, new_name, new_description)
         json.dump(biomes, json_file, indent=4)
 
 
+def check_existence(self, context, target, name):
+
+    if target == "library":
+        libraries = get_source_files(self, context)
+        for library in libraries:
+            if name == library[1]:
+                return True
+    elif target == "biome":
+        if name in get_biomes_list(self, context):
+            return True
+    elif target == "asset":
+        for library in get_source_files(self, context):
+
+            for asset in get_sources_assets(self, context, library[0]):
+                print(asset['name'])
+                print(name)
+                if name == asset['name']:
+                    return True
+
+    return False
+
 #####################################################################################
 #
 #       ADD OR REMOVE ASSETS
@@ -490,7 +511,7 @@ def format_asset(self, context, asset):
         assets = {asset.lod_0, asset.lod_1, asset.lod_2, asset.lod_3, asset.proxy}
     else:
         asset_type = "Object"
-        objects_list = "{}"
+        objects_list = {"LOD_0": "", "LOD_1": "", "LOD_2": "", "LOD_3": "", "PROXY": asset.proxy.name}
         assets = {asset.proxy}
 
     if asset.globalsave:

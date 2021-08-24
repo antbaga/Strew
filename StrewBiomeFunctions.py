@@ -37,11 +37,11 @@ def setup_biome_collection(self, context, asset_list, biome_name, strew_collecti
         for asset in category_list[category]:
             if asset['type'] == "Object":
                 StrewFunctions.import_asset(self, context, asset['file'], asset['name'], asset['type'], proxy_col)
-                obj = bpy.data.objects[asset['name']]
-                lod0_col.objects.link(obj)
-                lod1_col.objects.link(obj)
-                lod2_col.objects.link(obj)
-                lod3_col.objects.link(obj)
+                asset_object = bpy.data.objects[asset["objects"]['PROXY']]
+                lod0_col.objects.link(asset_object)
+                lod1_col.objects.link(asset_object)
+                lod2_col.objects.link(asset_object)
+                lod3_col.objects.link(asset_object)
 
             if asset['type'] == "Collection":
                 for number, lod in enumerate(asset['objects']):

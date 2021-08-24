@@ -11,7 +11,13 @@
                     "type": "Object",
                     "description": "Beautiful basilic",
                     "category": "grass",
-                    "objects": {}
+                    "objects": {
+                        "LOD_0": "",
+                        "LOD_1": "",
+                        "LOD_2": "",
+                        "LOD_3": "",
+                        "PROXY": "Basilic"
+                    }
                 }
             ]
         }

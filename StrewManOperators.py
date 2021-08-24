@@ -139,6 +139,11 @@ class AddBiomePopup(Operator):
     bl_label = "New"
 
     target: StringProperty(name="", default="")
+    keep_infos: BoolProperty(default=False)
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
 
     def draw(self, context):
         biome = context.scene.biomes_names_fields
@@ -149,6 +154,11 @@ class AddBiomePopup(Operator):
 
     def execute(self, context):
         biome = context.scene.biomes_names_fields
+        if SFunc.check_existence(self, context, self.target, biome.new_name):
+            self.report({"ERROR"}, f"{self.target} with this name already exists.")
+            bpy.ops.strew.add_biome_popup("INVOKE_DEFAULT", keep_infos=True, target=self.target)
+            return {'FINISHED'}
+
         SFunc.new_biome(self, context, self.target, biome.new_name, biome.new_description)
         if self.target == "library":
             context.scene.StrewSourceDrop.StrewSourceDropdown = biome.new_name
@@ -164,12 +174,20 @@ class AddBiomePopup(Operator):
         elif self.target == "biome":
             biome.new_name = "New Biome"
             biome.new_description = "Description of New biome"
-        return context.window_manager.invoke_props_dialog(self)
+        if self.keep_infos:
+            x = event.mouse_x
+            y = event.mouse_y
+            context.window.cursor_warp(x, y + 75)
+            return context.window_manager.invoke_props_dialog(self)
+        else:
+            return context.window_manager.invoke_props_dialog(self)
 
 
 class CloneBiomePopup(Operator):
     bl_idname = "strew.clone_biome_popup"
     bl_label = "Clone biome"
+
+    keep_infos: BoolProperty(default=False)
 
     def draw(self, context):
         properties = context.scene.biomes_names_fields
@@ -181,6 +199,12 @@ class CloneBiomePopup(Operator):
     def execute(self, context):
         biome_initial_name = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
         biome = context.scene.biomes_names_fields
+
+        if SFunc.check_existence(self, context, "biome", biome.new_name):
+            self.report({"ERROR"}, "biome with this name already exists.")
+            bpy.ops.strew.clone_biome_popup("INVOKE_DEFAULT", keep_infos=True)
+            return {'FINISHED'}
+
         SFunc.clone_biome(self, context, biome_initial_name, biome.new_name, biome.new_description)
         return {'FINISHED'}
 
@@ -191,7 +215,13 @@ class CloneBiomePopup(Operator):
             if biome[0] == biome_name:
                 biome_prop.new_name = biome[0]
                 biome_prop.new_description = biome[2]
-        return context.window_manager.invoke_props_dialog(self)
+        if self.keep_infos:
+            x = event.mouse_x
+            y = event.mouse_y
+            context.window.cursor_warp(x, y + 75)
+            return context.window_manager.invoke_props_dialog(self)
+        else:
+            return context.window_manager.invoke_props_dialog(self)
 
 
 class RemoveBiomePopup(Operator):
@@ -203,15 +233,24 @@ class RemoveBiomePopup(Operator):
     def draw(self, context):
         lay = self.layout
         col = lay.column(align=True)
-        col.label(text=f"Remove this library?")
+        col.label(text=f"Remove this {self.target}?")
         col.label(text="this can not be undone.")
 
     def execute(self, context):
+
         if self.target == "library":
+            dropdown_selected = bpy.context.scene.StrewSourceDrop["StrewSourceDropdown"]
             biome = bpy.context.scene.StrewSourceDrop.StrewSourceDropdown      # get the biome name
+            if dropdown_selected >= 1:
+                bpy.context.scene.StrewSourceDrop["StrewSourceDropdown"] = dropdown_selected - 1
         else:
+            dropdown_selected = bpy.context.scene.StrewPresetDrop["StrewPresetDropdown"]
             biome = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown       # get the biome name
+            if dropdown_selected >= 1:
+                bpy.context.scene.StrewPresetDrop["StrewPresetDropdown"] = dropdown_selected - 1
+
         SFunc.remove_biome(self, context, self.target, biome)                   # remove the biome
+
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -227,6 +266,8 @@ class RenameBiomePopup(Operator):
     bl_label = "Rename"
 
     target: StringProperty(name="", default="")
+    keep_infos: BoolProperty(default=False)
+    old_name: StringProperty(default="")
 
     def draw(self, context):
         properties = context.scene.biomes_names_fields
@@ -237,6 +278,13 @@ class RenameBiomePopup(Operator):
 
     def execute(self, context):
         biome = context.scene.biomes_names_fields                                    # get the infos of biome
+
+        if not biome.new_name == self.old_name:
+            if SFunc.check_existence(self, context, self.target, biome.new_name):
+                self.report({"ERROR"}, f"{self.target} with this name already exists.")
+                bpy.ops.strew.rename_biome_popup("INVOKE_DEFAULT", keep_infos=True, target=self.target)
+                return {'FINISHED'}
+
         if self.target == "library":
             initial_name = bpy.context.scene.StrewSourceDrop.StrewSourceDropdown
         else:
@@ -261,8 +309,15 @@ class RenameBiomePopup(Operator):
             for biome in StrewProps.preset_list_enum:
                 if biome[0] == biome_name:
                     field_prop.new_name = biome[1]
+                    self.old_name = biome[1]
                     field_prop.new_description = biome[2]
-        return context.window_manager.invoke_props_dialog(self)
+        if self.keep_infos:
+            x = event.mouse_x
+            y = event.mouse_y
+            context.window.cursor_warp(x, y + 75)
+            return context.window_manager.invoke_props_dialog(self)
+        else:
+            return context.window_manager.invoke_props_dialog(self)
 
 
 class SaveAsset(Operator):
@@ -270,6 +325,7 @@ class SaveAsset(Operator):
     bl_label = "Save asset"
 
     add_to_list: BoolProperty(name="add_to_list", default=False)
+    keep_infos: BoolProperty(default=False)
 
     def draw(self, context):
         asset_props = context.scene.StrewSaveAsset
@@ -298,6 +354,11 @@ class SaveAsset(Operator):
         asset = context.scene.StrewSaveAsset
         asset_type, objects_list, filepath = SFunc.format_asset(self, context, asset)
 
+        if SFunc.check_existence(self, context, "asset", asset.asset_name):
+            self.report({"ERROR"}, "Asset with this name already exists.")
+            bpy.ops.strew.save_asset("INVOKE_DEFAULT", keep_infos=True, target="asset")
+            return {'FINISHED'}
+
         SFunc.add_asset(self, context, "source", asset.target_library,
                         filepath,
                         asset.asset_name,
@@ -321,20 +382,29 @@ class SaveAsset(Operator):
 
     def invoke(self, context, event):
 
-        # Fill in the fields for default value
-        asset_props = context.scene.StrewSaveAsset
-        asset = bpy.context.scene.SourceLibrary.asset_library[bpy.context.scene.SourceLibrary.active_user_index]
+        if self.keep_infos:
+            x = event.mouse_x
+            y = event.mouse_y
+            context.window.cursor_warp(x, y + 75)
+            return context.window_manager.invoke_props_dialog(self)
+        else:
+            # Fill in the fields for default value
+            asset_props = context.scene.StrewSaveAsset
+            asset = bpy.context.scene.SourceLibrary.asset_library[bpy.context.scene.SourceLibrary.active_user_index]
 
-        asset_props.asset_name = asset["name"]
-        asset_props.asset_description = asset["description"]
-        asset_props.asset_category = asset["category"]
-        asset_props.lod_0 = None
-        asset_props.lod_1 = None
-        asset_props.lod_2 = None
-        asset_props.lod_3 = None
-        asset_props.proxy = bpy.data.objects[asset['name']]
+            asset_props.asset_name = asset["name"]
+            asset_props.asset_description = asset["description"]
+            asset_props.asset_category = asset["category"]
+            asset_props.lod_0 = None
+            asset_props.lod_1 = None
+            asset_props.lod_2 = None
+            asset_props.lod_3 = None
+            if asset_props.asset_type == "Object":
+                asset_props.proxy = bpy.data.objects[asset['name']]
+            else:
+                asset_props.proxy = None
 
-        return context.window_manager.invoke_props_dialog(self)
+            return context.window_manager.invoke_props_dialog(self)
 
 
 #####################################################################################
@@ -441,6 +511,9 @@ class EditAsset(Operator):
     bl_idname = "strew.edit_asset"
     bl_label = "Edit asset"
 
+    old_name = StringProperty(default="")
+    keep_infos: BoolProperty(default=False)
+
     def draw(self, context):
         asset_props = context.scene.StrewEditAsset
 
@@ -469,6 +542,12 @@ class EditAsset(Operator):
     def execute(self, context):
 
         asset = context.scene.StrewEditAsset
+        if not self.old_name == asset.asset_name:
+            if SFunc.check_existence(self, context, "asset", asset.asset_name):
+                self.report({"ERROR"}, "Asset with this name already exists.")
+                bpy.ops.strew.edit_asset("INVOKE_DEFAULT", keep_infos=True)
+                return {'FINISHED'}
+
         source_id = context.scene.SourceLibrary.active_user_index                 # find the object id
         asset_type, objects_list = SFunc.format_edit_asset(self, context, asset)
 
@@ -490,30 +569,35 @@ class EditAsset(Operator):
 
         if not SFunc.selected_source('name') == "%STREW%This_file": # and not "%STREW%" in asset["file"]:
             # Fill in the fields for default value
+            if self.keep_infos:
+                x = event.mouse_x
+                y = event.mouse_y
+                context.window.cursor_warp(x, y + 75)
+                return context.window_manager.invoke_props_dialog(self)
+            else:
+                asset_props.asset_name = asset["name"]
+                self.old_name = asset["name"]
+                asset_props.asset_description = asset["description"]
+                asset_props.asset_category = asset["category"]
+                asset_props.target_library = SFunc.selected_source('name')
+                asset_props.file = asset["file"]
+                if asset["type"] == "Collection":
+                    asset_props.asset_type = True
+                    objects = json.loads(asset["objects"].replace("'", "\""))
+                    asset_props.lod_0 = objects["LOD_0"]
+                    asset_props.lod_1 = objects["LOD_1"]
+                    asset_props.lod_2 = objects["LOD_2"]
+                    asset_props.lod_3 = objects["LOD_3"]
+                    asset_props.proxy = objects["PROXY"]
+                elif asset['type'] == "Object":
+                    asset_props.asset_type = False
+                    asset_props.lod_0 = ""
+                    asset_props.lod_1 = ""
+                    asset_props.lod_2 = ""
+                    asset_props.lod_3 = ""
+                    asset_props.proxy = asset["name"]
 
-            asset_props.asset_name = asset["name"]
-            asset_props.asset_description = asset["description"]
-            asset_props.asset_category = asset["category"]
-            asset_props.target_library = SFunc.selected_source('name')
-            asset_props.file = asset["file"]
-            if asset["type"] == "Collection":
-                asset_props.asset_type = True
-                objects = json.loads(asset["objects"].replace("'", "\""))
-                asset_props.lod_0 = objects["LOD_0"]
-                asset_props.lod_1 = objects["LOD_1"]
-                asset_props.lod_2 = objects["LOD_2"]
-                asset_props.lod_3 = objects["LOD_3"]
-                asset_props.proxy = objects["PROXY"]
-            elif asset['type'] == "Object":
-                asset_props.asset_type = False
-                asset_props.lod_0 = ""
-                asset_props.lod_1 = ""
-                asset_props.lod_2 = ""
-                asset_props.lod_3 = ""
-                asset_props.proxy = asset["name"]
-
-            context.window_manager.invoke_props_dialog(self)
-            return {"RUNNING_MODAL"}
+            return context.window_manager.invoke_props_dialog(self)
         else:
             self.report({"ERROR"}, "Can not edit Strew assets or assets from 'this file' library.")
             return {"CANCELLED"}
@@ -653,6 +737,7 @@ class ImportBiome(Operator):
         asset_list = SFunc.get_assets_list(self, context, selected_biome)  # get asset list
 
         SBFunc.imported_biome_list(selected_biome)                     # add biome to imported biomes list
+
         master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = False           # enable collections
 
