@@ -23,18 +23,18 @@ def setup_biome_collection(self, context, asset_list, biome_name, strew_collecti
 
     for asset in asset_list:
         if asset['category'] not in category_list:              # rebuild the dictionary to sort assets
-            category_list[asset['category']] = []               # creates category if not present
+            category_list[asset['category']] = {"group": asset['group'], "assets": []}               # creates category if not present
 
-        category_list[asset['category']].append(asset)          # then add the asset to the category
+        category_list[asset['category']]["assets"].append(asset)          # then add the asset to the category
 
     for category in category_list:
 
         cat_col, lod0_col, lod1_col, lod2_col, lod3_col, proxy_col = setup_lod_collection(biome_name, category, strew_collection)
 
         # assign collections to biome
-        assign_collection(biome_nodes, lod0_col, lod1_col, lod2_col, lod3_col, proxy_col, category)
+        assign_collection(biome_nodes, lod0_col, lod1_col, lod2_col, lod3_col, proxy_col, category, category_list[category]["group"])
 
-        for asset in category_list[category]:
+        for asset in category_list[category]["assets"]:
             if asset['type'] == "Object":
                 StrewFunctions.import_asset(self, context, asset['file'], asset['name'], asset['type'], proxy_col)
                 asset_object = bpy.data.objects[asset["objects"]['PROXY']]
@@ -116,11 +116,12 @@ def apply_geometry_nodes(terrain_object, biome_name, is_imported):
     return strew_biome, biome_object
 
 
-def assign_collection(biome, lod0_col, lod1_col, lod2_col, lod3_col, proxy_col, asset_type):
+def assign_collection(biome, lod0_col, lod1_col, lod2_col, lod3_col, proxy_col, asset_type, group):
     # CALLED FROM:
     #   setup_biome_collection  (Function)
 
-    asset_node = biome.nodes[asset_type]               # get asset type nodes
+    # asset_node = biome.nodes[asset_type]             # get asset type nodes
+    asset_node = add_category_node(biome, asset_type, group)             # get asset type nodes
 
     asset_node.inputs[17].default_value = False          # enable rocks in rocks_node
     asset_node.inputs[25].default_value = True           # Enable Use collection
@@ -130,6 +131,45 @@ def assign_collection(biome, lod0_col, lod1_col, lod2_col, lod3_col, proxy_col, 
     asset_node.inputs[29].default_value = lod2_col     # assign collection to field
     asset_node.inputs[30].default_value = lod3_col     # assign collection to field
 
+
+def add_category_node(biome, node_name, category_group):
+    # CALLED FROM:
+    #   assign_collection  (Function)
+
+    if biome.nodes.get(node_name):                  # if node exists, return it
+         return biome.nodes[node_name]
+    else:                                           # else, create the node
+        scatter_node = biome.nodes.new(type="GeometryNodeGroup")
+        scatter_node.node_tree = bpy.data.node_groups['Strew_scatter_node']
+        scatter_node.name = category_group + "_" + node_name
+        if category_group == "grass":
+            scatter_node.location = (26950, -2500)
+        elif category_group == "trees":
+            scatter_node.location = (25950, -2500)
+        elif category_group == "rocks":
+            scatter_node.location = (24950, -2500)
+
+        effector_node = biome.nodes[f"Strew_{category_group}_effector"]
+        join_node = biome.nodes[f"Strew_{category_group}_join"]
+
+        biome.links.new(effector_node.outputs[0], scatter_node.inputs["tree_input.00"])
+        biome.links.new(biome.nodes["Strew_connect.01"].outputs[0], scatter_node.inputs["tree_input.01"])
+        biome.links.new(biome.nodes["Strew_connect.02"].outputs[0], scatter_node.inputs["tree_input.02"])
+        biome.links.new(biome.nodes["Strew_connect.03"].outputs[0], scatter_node.inputs["tree_input.03"])
+        biome.links.new(biome.nodes["Strew_connect.04"].outputs[0], scatter_node.inputs["tree_input.04"])
+        biome.links.new(biome.nodes["Strew_connect.05"].outputs[0], scatter_node.inputs["tree_input.05"])
+        biome.links.new(biome.nodes["Strew_connect.06"].outputs[0], scatter_node.inputs["tree_input.06"])
+        biome.links.new(biome.nodes["Strew_connect.07"].outputs[0], scatter_node.inputs["tree_input.07"])
+        biome.links.new(biome.nodes["Strew_connect.08"].outputs[0], scatter_node.inputs["tree_input.08"])
+        biome.links.new(biome.nodes["Strew_connect.09"].outputs[0], scatter_node.inputs["tree_input.09"])
+        biome.links.new(biome.nodes["Strew_connect.10"].outputs[0], scatter_node.inputs["tree_input.10"])
+        biome.links.new(biome.nodes["Strew_connect.11"].outputs[0], scatter_node.inputs["tree_input.11"])
+        biome.links.new(biome.nodes["Strew_connect.12"].outputs[0], scatter_node.inputs["tree_input.12"])
+        biome.links.new(biome.nodes["Strew_connect.13"].outputs[0], scatter_node.inputs["Use Existent TOPO"])
+
+        biome.links.new(scatter_node.outputs[0], join_node.inputs[0])
+
+        return scatter_node
 
 def add_object_node(biome, terrain_object):
 

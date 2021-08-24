@@ -339,6 +339,7 @@ class SaveAsset(Operator):
         col.prop(asset_props, "asset_name")
         col.prop(asset_props, "asset_description")
         col.prop(asset_props, "asset_category")
+        col.prop(asset_props, "asset_group")
         col.prop(asset_props, "asset_type")
         if asset_props.asset_type:
             col.prop(asset_props, "lod_0")
@@ -364,6 +365,7 @@ class SaveAsset(Operator):
                         asset.asset_name,
                         asset_type,
                         asset.asset_description,
+                        asset.asset_group,
                         asset.asset_category,
                         str(objects_list))
 
@@ -373,6 +375,7 @@ class SaveAsset(Operator):
                             asset.asset_name,
                             asset_type,
                             asset.asset_description,
+                            asset.asset_group,
                             asset.asset_category,
                             str(objects_list))
 
@@ -395,6 +398,7 @@ class SaveAsset(Operator):
             asset_props.asset_name = asset["name"]
             asset_props.asset_description = asset["description"]
             asset_props.asset_category = asset["category"]
+            asset_props.asset_group = asset["group"]
             asset_props.lod_0 = None
             asset_props.lod_1 = None
             asset_props.lod_2 = None
@@ -661,6 +665,7 @@ class SCENE_OT_list_populate(Operator):
             item.file = Asset['file']
             item.type = Asset['type']
             item.category = Asset['category']
+            item.group = Asset['group']
             item.objects = str(Asset['objects'])
         return {'FINISHED'}
 
@@ -700,6 +705,7 @@ class SCENE_OT_source_populate(Operator):
                     item.description = "Custom Asset"
                     item.type = "Object"
                     item.category = "grass"
+                    item.group = "grass"
                     item.objects = "{}"
             return {'FINISHED'}
         else:
@@ -711,6 +717,7 @@ class SCENE_OT_source_populate(Operator):
                 item.file = Asset['file']
                 item.type = Asset['type']
                 item.category = Asset['category']
+                item.group = Asset['group']
                 item.objects = str(Asset['objects'])
             return {'FINISHED'}
 

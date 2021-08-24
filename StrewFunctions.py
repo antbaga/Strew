@@ -402,7 +402,7 @@ def check_existence(self, context, target, name):
 #####################################################################################
 
 
-def add_asset(self, context, target, biome_name, asset_file, asset_name, asset_type, asset_description, asset_category, asset_objects):
+def add_asset(self, context, target, biome_name, asset_file, asset_name, asset_type, asset_description, asset_group, asset_category, asset_objects):
     # CALLED FROM:
     #   AddAssetManager                 (Operator)
     #   AddAssetView                    (Operator)
@@ -426,6 +426,7 @@ def add_asset(self, context, target, biome_name, asset_file, asset_name, asset_t
             "type": asset_type,
             "description": asset_description,
             "category": asset_category,
+            "group": asset_group,
             "objects": json.loads(asset_objects.replace("'", "\""))
         })
 

@@ -130,10 +130,14 @@ class SMAAsset(PropertyGroup):
     file: StringProperty()
     type: StringProperty()
     category: StringProperty()
+    group: StringProperty()
     objects: StringProperty()
 
 
 class SMAList(PropertyGroup):
+    # FILLED FROM:
+    #   strew.list_populate (Operator)
+
     collection: CollectionProperty(
         name="SMAA",
         type=SMAAsset)
@@ -145,10 +149,14 @@ class SMSAsset(PropertyGroup):
     file: StringProperty()
     type: StringProperty()
     category: StringProperty()
+    group: StringProperty()
     objects: StringProperty()
 
 
 class LibraryList(PropertyGroup):
+    # FILLED FROM:
+    #   strew.source_populate (Operator)
+
     asset_library: CollectionProperty(
         name="Assets Library",
         type=SMSAsset)
@@ -243,6 +251,10 @@ class SaveAsset(PropertyGroup):
     asset_category: StringProperty(
         default="",
         name="Category"
+    )
+    asset_group: StringProperty(
+        default="",
+        name="Group"
     )
     asset_type: BoolProperty(
         default=False,

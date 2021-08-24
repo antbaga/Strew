@@ -11,6 +11,7 @@
                     "type": "Object",
                     "description": "Beautiful basilic",
                     "category": "grass",
+                    "group": "grass",
                     "objects": {
                         "LOD_0": "",
                         "LOD_1": "",
@@ -42,6 +43,7 @@
                     "type": "Collection",
                     "description": "less beautiful cube",
                     "category": "rocks",
+                    "group": "rocks",
                     "objects": {
                         "LOD_0": "Espece 1_Variante 1_LOD0",
                         "LOD_1": "Espece 1_Variante 1_LOD0",
@@ -56,6 +58,7 @@
                     "type": "Collection",
                     "description": "even less beautiful cube",
                     "category": "rocks",
+                    "group": "rocks",
                     "objects": {
                         "LOD_0": "Espece 1_Variante 2_LOD0",
                         "LOD_1": "Espece 1_Variante 2_LOD0",
