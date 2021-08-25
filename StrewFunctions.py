@@ -562,11 +562,12 @@ def set_active_collection(parent_collection, target_collection):
     return
 
 
-def import_asset(self, context, asset_path, asset_name, asset_type, target_collection):
+def import_asset(self, context, asset_path, asset_name, asset_type, target_collection, group, category):
     # CALLED FROM:
-    #   ImportBiome                 (Operator)
-    #   ImportAsset                 (Operator)
+    #   UpdateBiome                 (Operator)
     #   setup_biome_collection      (Function)
+    #       Called from:
+    #           ImportBiome         (Operator)
 
     if asset_name in target_collection.all_objects:                     # check if object exists
         print("Object with this name already exists.")
@@ -584,7 +585,10 @@ def import_asset(self, context, asset_path, asset_name, asset_type, target_colle
             directory=os.path.join(asset_path + f"\\{asset_type}\\"),
             filename=asset_name
         )
-        StrewBiomeFunctions.imported_assets_list[target_collection.name+"\\"+asset_name] = bpy.context.selected_objects[-1].name
+        if category in StrewBiomeFunctions.imported_assets_list:
+            StrewBiomeFunctions.imported_assets_list[category]['assets'][target_collection.name+"\\"+asset_name] = bpy.context.selected_objects[-1].name
+        else:
+            StrewBiomeFunctions.imported_assets_list[category] = {'group': group, 'assets': {target_collection.name+"\\"+asset_name: bpy.context.selected_objects[-1].name}}
 
 #####################################################################################
 #

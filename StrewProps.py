@@ -252,10 +252,14 @@ class SaveAsset(PropertyGroup):
         default="",
         name="Category"
     )
-    asset_group: StringProperty(
-        default="",
-        name="Group"
+    asset_group: EnumProperty(
+        name="group",
+        description="kind of asset. will determine it's behaviour",
+        items=[("grass", "grass", "grass"),
+                 ("rocks", "rocks", "rocks"),
+                 ("trees", "trees", "trees")]
     )
+
     asset_type: BoolProperty(
         default=False,
         name="Use LOD"
@@ -291,7 +295,6 @@ class SaveAsset(PropertyGroup):
         default=1
         )
 
-
 class EditAsset(PropertyGroup):
     def enum_target_libraries(self, context):
         global libraries_list
@@ -309,6 +312,13 @@ class EditAsset(PropertyGroup):
     asset_description: StringProperty(
         default="",
         name="Description"
+    )
+    asset_group: EnumProperty(
+        name="group",
+        description="kind of asset. will determine it's behaviour",
+        items=[("grass", "grass", "grass"),
+               ("rocks", "rocks", "rocks"),
+               ("trees", "trees", "trees")]
     )
     asset_category: StringProperty(
         default="",

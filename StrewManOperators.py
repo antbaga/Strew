@@ -141,9 +141,6 @@ class AddBiomePopup(Operator):
     target: StringProperty(name="", default="")
     keep_infos: BoolProperty(default=False)
 
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None
 
     def draw(self, context):
         biome = context.scene.biomes_names_fields
@@ -320,6 +317,108 @@ class RenameBiomePopup(Operator):
             return context.window_manager.invoke_props_dialog(self)
 
 
+#####################################################################################
+#
+#       ADD OR REMOVE ASSETS FROM BIOME
+#
+#####################################################################################
+
+
+class AddAssetManager(Operator):
+    bl_idname = "strew.add_asset_manager"
+    bl_label = "add_asset_manager"
+
+    # This operator adds an asset to a biome from the asset manager.
+    # it takes both source file and target biome
+    # then checks if asset comes from this file to ask the user if he wants
+    # to register the asset in a permanent file like custom.blend
+    # TODO: ask the user and register it
+
+    def execute(self, context):
+        cts = bpy.context.scene
+        asset = cts.SourceLibrary.asset_library[cts.SourceLibrary.active_user_index]
+
+        biome_name = SFunc.selected_biome(context)
+
+        # TODO: add a prompt asking user if he wants to save it locally or not
+        SFunc.add_asset(self, context, "biome", biome_name,
+                        asset['file'],
+                        asset['name'],
+                        asset['type'],
+                        asset['description'],
+                        asset['group'],
+                        asset['category'],
+                        asset['objects'])
+        SCENE_OT_list_populate.execute(self, context)
+        return {'FINISHED'}
+
+
+class AddAssetView(Operator):
+    bl_idname = "strew.add_asset_view"
+    bl_label = "add_asset_view"
+
+    # this operator adds an asset or group of assets to a biome from the 3d view
+    # it takes the biome, and the name of the file
+    # if it comes from this file, it asks the user if he wants to add to permanent file
+    # then, if the file has not been saved (thus, has no name) it stops and tell the user to save.
+
+    def execute(self, context):
+        # TODO: add "if save to custom:"
+        if bpy.data.filepath != "":
+            biome_name = SFunc.selected_biome(context)
+            file_name = bpy.path.basename(bpy.data.filepath)
+
+            for obj in bpy.context.selected_objects:
+                SFunc.add_asset(self, context, "biome", biome_name,
+                                file_name,
+                                obj.name,
+                                "Object",
+                                "Custom asset",
+                                "grass",
+                                "short grass",
+                                "{}"
+                                )
+            return {'FINISHED'}
+        else:
+            print("can't save as asset from temporary blend file yet. please save your file")
+            return {'FINISHED'}
+
+
+class RemoveAssetManager(Operator):
+    bl_idname = "strew.remove_asset_manager"
+    bl_label = "remove_asset_manager"
+
+    def execute(self, context):
+        cts = bpy.context.scene
+        asset_id = cts.SMAL.active_user_index                        # find the object id
+        biome = cts.StrewPresetDrop.StrewPresetDropdown              # find the biome
+
+        SFunc.remove_asset_id(self, context, 'biome', biome, asset_id)  # remove the asset
+        SCENE_OT_list_populate.execute(self, context)                # update the list in UI
+
+        return {'FINISHED'}
+
+
+class RemoveAssetView(Operator):
+    bl_idname = "strew.remove_asset_view"
+    bl_label = "remove_asset_view"
+
+    def execute(self, context):
+        biome = context.scene.StrewPresetDrop.StrewPresetDropdown
+        file_name = bpy.path.basename(bpy.data.filepath)
+
+        for obj in bpy.context.selected_objects:
+            SFunc.remove_asset(self, context, "biome", biome, obj.name, file_name)
+        return {'FINISHED'}
+
+
+#####################################################################################
+#
+#       ADD OR REMOVE ASSETS FROM LIBRARY
+#
+#####################################################################################
+
+
 class SaveAsset(Operator):
     bl_idname = "strew.save_asset"
     bl_label = "Save asset"
@@ -399,6 +498,7 @@ class SaveAsset(Operator):
             asset_props.asset_description = asset["description"]
             asset_props.asset_category = asset["category"]
             asset_props.asset_group = asset["group"]
+            asset_props.asset_group = asset["group"]
             asset_props.lod_0 = None
             asset_props.lod_1 = None
             asset_props.lod_2 = None
@@ -409,106 +509,6 @@ class SaveAsset(Operator):
                 asset_props.proxy = None
 
             return context.window_manager.invoke_props_dialog(self)
-
-
-#####################################################################################
-#
-#       ADD OR REMOVE ASSETS FROM BIOME
-#
-#####################################################################################
-
-
-class AddAssetManager(Operator):
-    bl_idname = "strew.add_asset_manager"
-    bl_label = "add_asset_manager"
-
-    # This operator adds an asset to a biome from the asset manager.
-    # it takes both source file and target biome
-    # then checks if asset comes from this file to ask the user if he wants
-    # to register the asset in a permanent file like custom.blend
-    # TODO: ask the user and register it
-
-    def execute(self, context):
-        cts = bpy.context.scene
-        asset = cts.SourceLibrary.asset_library[cts.SourceLibrary.active_user_index]
-
-        biome_name = SFunc.selected_biome(context)
-
-        # TODO: add a prompt asking user if he wants to save it locally or not
-        SFunc.add_asset(self, context, "biome", biome_name,
-                        asset['file'],
-                        asset['name'],
-                        asset['type'],
-                        asset['description'],
-                        asset['category'],
-                        asset['objects'])
-        SCENE_OT_list_populate.execute(self, context)
-        return {'FINISHED'}
-
-
-class AddAssetView(Operator):
-    bl_idname = "strew.add_asset_view"
-    bl_label = "add_asset_view"
-
-    # this operator adds an asset or group of assets to a biome from the 3d view
-    # it takes the biome, and the name of the file
-    # if it comes from this file, it asks the user if he wants to add to permanent file
-    # then, if the file has not been saved (thus, has no name) it stops and tell the user to save.
-
-    def execute(self, context):
-        # TODO: add "if save to custom:"
-        if bpy.data.filepath != "":
-            biome_name = SFunc.selected_biome(context)
-            file_name = bpy.path.basename(bpy.data.filepath)
-
-            for obj in bpy.context.selected_objects:
-                SFunc.add_asset(self, context, "biome", biome_name,
-                                file_name,
-                                obj.name,
-                                "Object",
-                                "Custom asset",
-                                "grass",
-                                "{}"
-                                )
-            return {'FINISHED'}
-        else:
-            print("can't save as asset from temporary blend file yet. please save your file")
-            return {'FINISHED'}
-
-
-class RemoveAssetManager(Operator):
-    bl_idname = "strew.remove_asset_manager"
-    bl_label = "remove_asset_manager"
-
-    def execute(self, context):
-        cts = bpy.context.scene
-        asset_id = cts.SMAL.active_user_index                        # find the object id
-        biome = cts.StrewPresetDrop.StrewPresetDropdown              # find the biome
-
-        SFunc.remove_asset_id(self, context, 'biome', biome, asset_id)  # remove the asset
-        SCENE_OT_list_populate.execute(self, context)                # update the list in UI
-
-        return {'FINISHED'}
-
-
-class RemoveAssetView(Operator):
-    bl_idname = "strew.remove_asset_view"
-    bl_label = "remove_asset_view"
-
-    def execute(self, context):
-        biome = context.scene.StrewPresetDrop.StrewPresetDropdown
-        file_name = bpy.path.basename(bpy.data.filepath)
-
-        for obj in bpy.context.selected_objects:
-            SFunc.remove_asset(self, context, "biome", biome, obj.name, file_name)
-        return {'FINISHED'}
-
-
-#####################################################################################
-#
-#       ADD OR REMOVE ASSETS FROM LIBRARY
-#
-#####################################################################################
 
 
 class EditAsset(Operator):
@@ -529,6 +529,7 @@ class EditAsset(Operator):
         col.prop(asset_props, "asset_name")
         col.prop(asset_props, "asset_description")
         col.prop(asset_props, "asset_category")
+        col.prop(asset_props, "asset_group")
         col.prop(asset_props, "asset_type")
         if asset_props.asset_type:
             col.prop(asset_props, "lod_0")
@@ -561,6 +562,7 @@ class EditAsset(Operator):
                         asset.asset_name,
                         asset_type,
                         asset.asset_description,
+                        asset.asset_group,
                         asset.asset_category,
                         str(objects_list))
 
@@ -583,6 +585,7 @@ class EditAsset(Operator):
                 self.old_name = asset["name"]
                 asset_props.asset_description = asset["description"]
                 asset_props.asset_category = asset["category"]
+                asset_props.asset_group = asset["group"]
                 asset_props.target_library = SFunc.selected_source('name')
                 asset_props.file = asset["file"]
                 if asset["type"] == "Collection":
@@ -748,6 +751,7 @@ class ImportBiome(Operator):
         master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = False           # enable collections
 
+        # create biome and import assets
         biome_nodes, biome_object = SBFunc.apply_geometry_nodes(terrain_object, selected_biome, False)  # assign biome
 
         SBFunc.setup_biome_collection(self, context, asset_list, selected_biome, strew_collection, biome_nodes)
@@ -796,29 +800,39 @@ class UpdateBiome(Operator):
     def execute(self, context):
         biome = bpy.data.objects[SFunc.selected_biome(context)]  # get biome name
         asset_list = SFunc.get_assets_list(self, context, biome.name)  # get asset list
+        strew_collection = SFunc.setup_collections()  # get collection name
 
         master_collection_layer = bpy.context.view_layer.layer_collection.children[SFunc.strew_collection_master]
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = False  # enable collections
 
+        # decomposes the biome in indivicual assets with all necessary informations
         formated_list = SBFunc.format_asset_list(asset_list, biome.name)
+
         for asset in formated_list:
+            # prevent doubles by cheking if asset in imported assets list in biome properties
             if not SBFunc.is_asset_imported(formated_list[asset]['fullname'], biome):
+                if formated_list[asset]['coll'] not in bpy.data.collections:
+                    SBFunc.setup_lod_collection(biome.name, formated_list[asset]['category'], strew_collection)
                 collection = bpy.data.collections[formated_list[asset]['coll']]
 
+                # actualy imports the assets
                 SFunc.import_asset(self, context, formated_list[asset]['file'],
                                    formated_list[asset]['name'],
                                    "Object",
                                    collection,
+                                   formated_list[asset]["group"],
+                                   formated_list[asset]["category"],
                                    )
         asset_list_names = {}
         for asset in formated_list:
             asset_list_names[asset] = formated_list[asset]["fullname"]
 
+        # get all imported assets that don't match biome file data
         obsolete_assets = SBFunc.is_asset_obsolete(asset_list_names, biome)
         for asset in obsolete_assets:
             bpy.data.objects.remove(bpy.data.objects[obsolete_assets[asset]])
 
-        SBFunc.objects_list_property(biome, obsolete_assets)
+        SBFunc.objects_list_property(biome, formated_list)
 
         master_collection_layer.children[SFunc.strew_collection_assets].exclude = True  # disable collections
 

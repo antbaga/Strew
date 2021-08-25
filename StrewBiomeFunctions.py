@@ -36,7 +36,14 @@ def setup_biome_collection(self, context, asset_list, biome_name, strew_collecti
 
         for asset in category_list[category]["assets"]:
             if asset['type'] == "Object":
-                StrewFunctions.import_asset(self, context, asset['file'], asset['name'], asset['type'], proxy_col)
+                # Add category and group here    \/     \/      \/
+                StrewFunctions.import_asset(self, context, asset['file'],
+                                            asset['name'],
+                                            asset['type'],
+                                            proxy_col,
+                                            asset['group'],
+                                            asset['category'])
+
                 asset_object = bpy.data.objects[asset["objects"]['PROXY']]
                 lod0_col.objects.link(asset_object)
                 lod1_col.objects.link(asset_object)
@@ -49,12 +56,17 @@ def setup_biome_collection(self, context, asset_list, biome_name, strew_collecti
                     asset_name = asset['objects'][lod]
                     lod_coll = bpy.data.collections[biome_name + "_" + category + "_" + lod_number]
 
-                    StrewFunctions.import_asset(self, context, asset['file'], asset_name, "Object", lod_coll)
+                    StrewFunctions.import_asset(self, context, asset['file'],
+                                                asset_name,
+                                                "Object",
+                                                lod_coll,
+                                                asset['group'],
+                                                asset['category'])
 
 
 def setup_lod_collection(biome_name, category, strew_collection):
     # CALLED FROM:
-    #   ImportBiome     (Operator)
+    #   setup_biome_collection     (Function)
 
     category_coll = bpy.data.collections.new(str(biome_name + "_" + category))
     strew_collection.children.link(category_coll)
@@ -170,6 +182,7 @@ def add_category_node(biome, node_name, category_group):
         biome.links.new(scatter_node.outputs[0], join_node.inputs[0])
 
         return scatter_node
+
 
 def add_object_node(biome, terrain_object):
 
@@ -301,6 +314,8 @@ def format_asset_list(asset_list, biome_name):
                                                     'file': asset['file'],
                                                     'type': asset['type'],
                                                     'coll': collection,
+                                                    'group': asset['group'],
+                                                    'category': asset['category'],
                                                     'fullname': collection + "\\" + asset_name}
 
         elif asset["type"] == "Object":
@@ -310,6 +325,8 @@ def format_asset_list(asset_list, biome_name):
                                                    'file': asset['file'],
                                                    'type': asset['type'],
                                                    'coll': collection,
+                                                   'group': asset['group'],
+                                                   'category': asset['category'],
                                                    'fullname': collection + "\\" + asset['name']}
 
     return formated_asset_list
@@ -324,10 +341,16 @@ def is_asset_imported(asset, biome):
     if biome.get(imported_assets_property) is not None:
         imported_list = biome.get(imported_assets_property).to_dict()
 
-        for imported_asset in imported_list:
-            if imported_asset == asset:
-                imported = True
-                return imported
+        #  imported_list is of format:
+        #   {category:group,assets{path:"fullname", path:"fullname", path:"fullname"....}}
+        #  asset is of format:
+        #   fullname
+
+        for category in imported_list:
+            for imported_asset in imported_list[category]['assets']:
+                if imported_asset == asset:
+                    imported = True
+                    return imported
         return imported
     else:
         objects_list_property(biome)
@@ -342,14 +365,13 @@ def is_asset_obsolete(asset_list, biome):
     obsolete_assets = {}
     imported_list = biome.get(imported_assets_property).to_dict()
 
-    for imported_asset in imported_list:
-        for asset in asset_list:
-
-            if imported_asset == asset_list[asset]:
-                is_obsolete = False
-
-        if is_obsolete:
-            obsolete_assets[imported_asset] = imported_list[imported_asset]
+    for category in imported_list:
+        for imported_asset in imported_list[category]['assets']:
+            for asset in asset_list:
+                if imported_asset == asset_list[asset]:
+                    is_obsolete = False
+            if is_obsolete:
+                obsolete_assets[imported_asset] = imported_list[category]['assets'][imported_asset]
 
     return obsolete_assets
 
@@ -358,20 +380,58 @@ def objects_list_property(biome, asset_list={}):
     # CALLED FROM:
     #   ImportBiome     (Operator)
     #   UpdateBiome     (Operator)
+    #   is_asset_imported     (Function)
+
+    # First, checks if a list of imported assets exists. in that case, merge with new assets.
+    # imported_assets_list and imported_list are of format:
+    #   {category:group,assets{path:"fullname", path:"fullname", path:"fullname"....}}
+    # asset_list is of format:
+    #   {fullname{name,file,type,coll,group,category,fullname}}
+    # have to keep importer_assets_list format
+    # asset_list is directly the list of asset from the biome file, whereas imported_assets_list are only
+    # the assets that have been imported this time.
+
+    # So, this function checks if all imported assets still have to be there ore are obsoletes.
+    # then add them to the import_assets_list
 
     is_obsolete = True
 
     if biome.get(imported_assets_property) is not None:                     # biome already imported
         imported_list = biome.get(imported_assets_property).to_dict()       # get list of imported assets
-        for imported_asset in imported_list:                                # for each asset newly imported
-            for asset in asset_list:
-                if imported_asset == asset_list[asset]:
-                    is_obsolete = False
-            if not is_obsolete:
-                imported_assets_list[imported_asset] = imported_assets[imported_asset]  # add it to list
 
+        for category in imported_list:
+            for imported_asset in imported_list[category]['assets']:
+                for asset in asset_list:
+                    if imported_asset == asset_list[asset]['fullname']:
+                        is_obsolete = False
+                if not is_obsolete:
+                    if category in imported_assets_list:
+                        if imported_asset not in imported_assets_list[category]['assets']:
+                            imported_assets_list[category]['assets'][imported_asset] = imported_list[category]['assets'][imported_asset]
+                        else:
+                            print("wtf?")
+                    else:
+                        imported_assets_list[category] = {'group': imported_list[category]['group'], 'assets': {imported_asset: imported_list[category]['assets'][imported_asset]}}
+
+
+        # iterate through all assets in imported_list.
+        # get the name of each asset (not the full name, but just the name)
+        # then, iterate through asset_list and check if name is a match
+        # is_obsolete = True
+
+        # if biome.get(imported_assets_property) is not None:                                 # biome already imported
+        #    imported_list = biome.get(imported_assets_property).to_dict()                   # get list of imported assets
+        #    for imported_asset in imported_list:                                            # for each asset already imported
+        #        for asset in asset_list:
+        #            if imported_asset == asset_list[asset]:
+        #                is_obsolete = False
+        #        if not is_obsolete:
+        #            imported_assets_list[imported_asset] = imported_assets[imported_asset]
+
+
+    # else,  and in any case, apply the merged list of assets
     biome[imported_assets_property] = imported_assets_list                  # apply list to property
-    imported_assets_list.clear()                                            # clear list
+    imported_assets_list.clear()                                            # clear imported assets list
 
 
 #####################################################################################
