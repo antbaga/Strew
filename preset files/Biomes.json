@@ -10,7 +10,7 @@
                     "name": "Variante 2",
                     "type": "Collection",
                     "description": "even less beautiful cube",
-                    "category": "rocks",
+                    "category": "gravel",
                     "group": "rocks",
                     "objects": {
                         "LOD_0": "Espece 1_Variante 2_LOD0",
@@ -25,7 +25,7 @@
                     "name": "Variante 1",
                     "type": "Collection",
                     "description": "less beautiful cube",
-                    "category": "large rocks",
+                    "category": "rock n roll",
                     "group": "rocks",
                     "objects": {
                         "LOD_0": "Espece 1_Variante 1_LOD0",

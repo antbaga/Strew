@@ -869,6 +869,22 @@ class AssignBiome(Operator):
 
 #####################################################################################
 #
+#       UI Switcher
+#
+#####################################################################################
+
+class CompositorPanelSwitcher(Operator):
+    bl_idname = "strew.switchcompopanel"
+    bl_label = "switch compositor panel"
+
+    node : StringProperty(default='grass')
+
+    def execute(self, context):
+        SFunc.current_node = self.node
+        return {'FINISHED'}
+
+#####################################################################################
+#
 #       REGISTER AND UNREGISTER
 #
 #####################################################################################
@@ -904,6 +920,8 @@ classes = [
     UpdateBiome,                    # strew.update_biome
     RemoveBiome,                    # strew.remove_biome
     AssignBiome,                    # strew.assign_biome
+    # --- ui Switcher ---
+    CompositorPanelSwitcher,        # strew.switchcompopanel
 ]
 
 

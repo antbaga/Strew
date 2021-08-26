@@ -149,7 +149,7 @@ def add_category_node(biome, node_name, category_group):
     #   assign_collection  (Function)
 
     if biome.nodes.get(node_name):                  # if node exists, return it
-         return biome.nodes[node_name]
+        return biome.nodes[node_name]
     else:                                           # else, create the node
         scatter_node = biome.nodes.new(type="GeometryNodeGroup")
         scatter_node.node_tree = bpy.data.node_groups['Strew_scatter_node']
@@ -257,6 +257,7 @@ def is_biome_imported(biome_name):
         imported_biomes = bpy.context.scene.get(imported_biomes_property).to_dict()
 
         for biome in imported_biomes:
+            imported = False
             if biome_name == imported_biomes[biome][0]:
                 imported = True
                 return imported
@@ -311,23 +312,23 @@ def format_asset_list(asset_list, biome_name):
                 asset_name = asset['objects'][lod]
                 collection = biome_name + "_" + category + "_" + lod_number
                 formated_asset_list[collection + "\\" + asset_name] = {'name': asset_name,
-                                                    'file': asset['file'],
-                                                    'type': asset['type'],
-                                                    'coll': collection,
-                                                    'group': asset['group'],
-                                                    'category': asset['category'],
-                                                    'fullname': collection + "\\" + asset_name}
+                                                                       'file': asset['file'],
+                                                                       'type': asset['type'],
+                                                                       'coll': collection,
+                                                                       'group': asset['group'],
+                                                                       'category': asset['category'],
+                                                                       'fullname': collection + "\\" + asset_name}
 
         elif asset["type"] == "Object":
             lod = "PROXY"
             collection = biome_name + "_" + category + "_" + lod
             formated_asset_list[collection + "\\" + asset['name']] = {'name': asset['name'],
-                                                   'file': asset['file'],
-                                                   'type': asset['type'],
-                                                   'coll': collection,
-                                                   'group': asset['group'],
-                                                   'category': asset['category'],
-                                                   'fullname': collection + "\\" + asset['name']}
+                                                                      'file': asset['file'],
+                                                                      'type': asset['type'],
+                                                                      'coll': collection,
+                                                                      'group': asset['group'],
+                                                                      'category': asset['category'],
+                                                                      'fullname': collection + "\\" + asset['name']}
 
     return formated_asset_list
 
@@ -337,10 +338,10 @@ def is_asset_imported(asset, biome):
     #   UpdateBiome     (Operator)
 
     # checks if submitted asset is imported or not.
-    imported = False
-    if biome.get(imported_assets_property) is not None:
-        imported_list = biome.get(imported_assets_property).to_dict()
 
+    if bpy.data.texts.get(biome.name) is not None:                     # biome already imported
+        imported_list = json.loads(bpy.data.texts[biome.name].as_string())
+        imported = False
         #  imported_list is of format:
         #   {category:group,assets{path:"fullname", path:"fullname", path:"fullname"....}}
         #  asset is of format:
@@ -348,6 +349,7 @@ def is_asset_imported(asset, biome):
 
         for category in imported_list:
             for imported_asset in imported_list[category]['assets']:
+                imported = False
                 if imported_asset == asset:
                     imported = True
                     return imported
@@ -361,22 +363,26 @@ def is_asset_obsolete(asset_list, biome):
     #   UpdateBiome     (Operator)
 
     # checks if submitted asset has to be removed or not.
-    is_obsolete = True
+
     obsolete_assets = {}
-    imported_list = biome.get(imported_assets_property).to_dict()
+    if bpy.data.texts.get(biome.name) is not None:                     # biome already imported
+        imported_list = json.loads(bpy.data.texts[biome.name].as_string())
 
-    for category in imported_list:
-        for imported_asset in imported_list[category]['assets']:
-            for asset in asset_list:
-                if imported_asset == asset_list[asset]:
-                    is_obsolete = False
-            if is_obsolete:
-                obsolete_assets[imported_asset] = imported_list[category]['assets'][imported_asset]
+        for category in imported_list:
+            for imported_asset in imported_list[category]['assets']:
+                is_obsolete = True
+                for asset in asset_list:
+                    if imported_asset == asset_list[asset]:
+                        is_obsolete = False
+                if is_obsolete:
+                    obsolete_assets[imported_asset] = imported_list[category]['assets'][imported_asset]
 
+    else:
+        objects_list_property(biome.name)
     return obsolete_assets
 
 
-def objects_list_property(biome, asset_list={}):
+def objects_list_property(biome, asset_list= None):
     # CALLED FROM:
     #   ImportBiome     (Operator)
     #   UpdateBiome     (Operator)
@@ -394,13 +400,16 @@ def objects_list_property(biome, asset_list={}):
     # So, this function checks if all imported assets still have to be there ore are obsoletes.
     # then add them to the import_assets_list
 
-    is_obsolete = True
+    # iterate through all assets in imported_list.
+    # get the name of each asset (not the full name, but just the name)
+    # then, iterate through asset_list and check if name is a match
 
-    if biome.get(imported_assets_property) is not None:                     # biome already imported
-        imported_list = biome.get(imported_assets_property).to_dict()       # get list of imported assets
+    if bpy.data.texts.get(biome.name) is not None:                     # biome already imported
+        imported_list = json.loads(bpy.data.texts[biome.name].as_string())
 
         for category in imported_list:
             for imported_asset in imported_list[category]['assets']:
+                is_obsolete = True
                 for asset in asset_list:
                     if imported_asset == asset_list[asset]['fullname']:
                         is_obsolete = False
@@ -413,24 +422,13 @@ def objects_list_property(biome, asset_list={}):
                     else:
                         imported_assets_list[category] = {'group': imported_list[category]['group'], 'assets': {imported_asset: imported_list[category]['assets'][imported_asset]}}
 
-
-        # iterate through all assets in imported_list.
-        # get the name of each asset (not the full name, but just the name)
-        # then, iterate through asset_list and check if name is a match
-        # is_obsolete = True
-
-        # if biome.get(imported_assets_property) is not None:                                 # biome already imported
-        #    imported_list = biome.get(imported_assets_property).to_dict()                   # get list of imported assets
-        #    for imported_asset in imported_list:                                            # for each asset already imported
-        #        for asset in asset_list:
-        #            if imported_asset == asset_list[asset]:
-        #                is_obsolete = False
-        #        if not is_obsolete:
-        #            imported_assets_list[imported_asset] = imported_assets[imported_asset]
-
+    else:
+        biome_data_file = bpy.data.texts.new(biome.name)
+        biome_data_file.use_fake_user = True
 
     # else,  and in any case, apply the merged list of assets
-    biome[imported_assets_property] = imported_assets_list                  # apply list to property
+    bpy.data.texts[biome.name].clear()
+    json.dump(imported_assets_list, bpy.data.texts[biome.name], indent=4)
     imported_assets_list.clear()                                            # clear imported assets list
 
 

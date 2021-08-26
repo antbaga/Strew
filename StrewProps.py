@@ -4,6 +4,7 @@ from bpy.types import Operator, AddonPreferences, PropertyGroup, UIList, Panel
 from bpy.props import StringProperty, IntProperty, EnumProperty, PointerProperty, CollectionProperty, BoolProperty
 from . import __init__, StrewUi, StrewFunctions, StrewManOperators, StrewBiomeFunctions
 import addon_utils
+import json
 
 asset_list_enum = []
 old_preset = ""
@@ -210,13 +211,33 @@ class PanelSwitch(bpy.types.PropertyGroup):
         default={"Settings"},
         options={"ENUM_FLAG"}
     )
-    AssetList: EnumProperty(
-        items=enum_assets,
+
+
+nodes_list = StrewFunctions.nodes_list
+
+
+class BiomesNodes(PropertyGroup):
+
+    def get_biomes_nodes(self, context):
+        biome = StrewFunctions.selected_biome(context)
+        global nodes_list
+        nodes_list.append(("trees", "Trees", "trees"))
+        nodes_list.append(("grass", "Grass", "grass"))
+        nodes_list.append(("rocks", "Rocks", "rocks"))
+        imported_list = json.loads(bpy.data.texts[biome].as_string())
+        for category in imported_list:
+            nodes_list.append((f"{imported_list[category]['group']}_{category}",
+                               category,
+                               f"{imported_list[category]['group']}_{category}"))
+
+        return nodes_list
+
+    NodesList: EnumProperty(
+        name="Nodes list",
+        description="each node present in biome",
+        items=get_biomes_nodes,
         options={"ENUM_FLAG"},
-    )
-    Decorator: EnumProperty(
-        items=[("Trees", "Trees", "Trees"), ("Grass", "Grass", "Grass"), ("Rocks", "Rocks", "Rocks")],
-        options={"ENUM_FLAG"},
+        default=1
     )
 
 
@@ -294,6 +315,7 @@ class SaveAsset(PropertyGroup):
         items=enum_target_libraries,
         default=1
         )
+
 
 class EditAsset(PropertyGroup):
     def enum_target_libraries(self, context):
@@ -394,6 +416,7 @@ classes = [
     # --- Panels ---
     BiomeNamesFields,
     PanelSwitch,
+    BiomesNodes,
     # --- Save Assets ---
     SaveAsset,
     EditAsset,
@@ -403,8 +426,9 @@ classes = [
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.biomes_names_fields = bpy.props.PointerProperty(type=BiomeNamesFields)
-    bpy.types.Scene.StrewPanelSwitch = bpy.props.PointerProperty(type=PanelSwitch)
+    bpy.types.Scene.biomes_names_fields = PointerProperty(type=BiomeNamesFields)
+    bpy.types.Scene.StrewPanelSwitch = PointerProperty(type=PanelSwitch)
+    bpy.types.Scene.StrewBiomesNodes = PointerProperty(type=BiomesNodes)
     bpy.types.Scene.StrewPresetDrop = PointerProperty(type=StrewPresetProperty)
     bpy.types.Scene.StrewSourceDrop = PointerProperty(type=StrewSourceProperty)
     bpy.types.Scene.StrewImportedBiomes = PointerProperty(type=StrewImportedBiomes)
@@ -419,6 +443,7 @@ def unregister():
         bpy.utils.unregister_class(cls)
     del bpy.types.Scene.biomes_names_fields
     del bpy.types.Scene.StrewPanelSwitch
+    del bpy.types.Scene.StrewBiomesNodes
     del bpy.types.Scene.StrewPresetDrop
     del bpy.types.Scene.StrewSourceDrop
     del bpy.types.Scene.StrewSaveAsset

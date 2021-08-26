@@ -4,6 +4,7 @@ from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
 from . import __init__, StrewManOperators, StrewBiomeFunctions, StrewProps, StrewFunctions
 import addon_utils
+import json
 
 
 class MainPanel(bpy.types.Panel):
@@ -16,6 +17,7 @@ class MainPanel(bpy.types.Panel):
 
     def draw(self, context):
         panel_switch = context.scene.StrewPanelSwitch
+        BiomesNodes = context.scene.StrewBiomesNodes
         selected_biome = StrewFunctions.selected_biome(context)
         imported_biomes = bpy.context.scene.get('Strew_Imported_Biomes')
 
@@ -75,31 +77,47 @@ class MainPanel(bpy.types.Panel):
         elif panel_switch.MainView == {'Biomes'} or bpy.context.scene.name == StrewFunctions.strew_compositor_scene or\
                 bpy.context.window.workspace.name == StrewFunctions.strew_compositor_workspace:
 
-            Geonode_Tree = bpy.data.node_groups["Geometry Nodes.005"].nodes["trees"].inputs
-            Geonode_Grass = bpy.data.node_groups["Geometry Nodes.005"].nodes["rocks"].inputs
-            Geonode_Rocks = bpy.data.node_groups["Geometry Nodes.005"].nodes["grass"].inputs
+            biome = StrewFunctions.selected_biome(context)
+
+            imported_list = json.loads(bpy.data.texts[biome].as_string())
+
             c = r.column(align=True)
-            c.scale_x = 0.30
+            c.scale_x = .5
             c.scale_y = 2.0
-            c.prop(panel_switch, "Decorator")
-            c.separator(factor=1.0)
-            c.prop(panel_switch, "AssetList")
+            c.operator("strew.switchcompopanel", text='grass').node = 'grass'
+            c.operator("strew.switchcompopanel", text='trees').node = 'trees'
+            c.operator("strew.switchcompopanel", text='rocks').node = 'rocks'
+            c.separator(factor=2.0)
+            for category in imported_list:
+                c.operator("strew.switchcompopanel", text=category).node = f"{imported_list[category]['group']}_{category}"
+
+            node = StrewFunctions.current_node
+            biome_tree = bpy.data.node_groups[biome].nodes[node].inputs
+            # c = r.column(align=True)
+            # c.scale_x = 0.30
+            # c.scale_y = 2.0
+            # c.prop(BiomesNodes, "NodesList")
             r.separator(factor=2.0)
             c = r.column(align=True)
             c.prop(context.scene.StrewImportedBiomes, "ImportedBiomes")
 
             c.operator("strew.biome_compositor", text="Exit Biome Compositor").switcher = 1
 
+            c.separator(factor=10.0)
+
+            c.prop(biome_tree[2], "default_value", text="minimal distance")
+            c.prop(biome_tree[3], "default_value", text="density")
+            c.prop(biome_tree[4], "default_value", text="% particle displayed")
+            c.prop(biome_tree[5], "default_value", text="Scale")
+            c.prop(biome_tree[6], "default_value", text="Align Z")
             c.separator(factor=3.0)
-            if panel_switch.Decorator == {"Trees"}:
-                for Input in Geonode_Tree:
-                    c.prop(Input, "default_value")
-            if panel_switch.Decorator == {"Grass"}:
-                for Input in Geonode_Grass:
-                    c.prop(Input, "default_value")
-            if panel_switch.Decorator == {"Rocks"}:
-                for Input in Geonode_Rocks:
-                    c.prop(Input, "default_value")
+            c.prop(biome_tree[9], "default_value", text="Position")
+            c.prop(biome_tree[9], "default_value", text="Position Z")
+            c.prop(biome_tree[9], "default_value", text="Rotation")
+            c.prop(biome_tree[9], "default_value", text="Rotation Z")
+            c.prop(biome_tree[9], "default_value", text="scale")
+            c.prop(biome_tree[9], "default_value", text="Seed")
+
 
         #####################################################################################
         #       ASSET CREATOR

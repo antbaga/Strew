@@ -23,6 +23,8 @@ preset_list_enum = []
 sources_list_enum = []
 imported_list_enum = []
 libraries_target_enum = []
+nodes_list = []
+current_node = "grass"
 strew_folder = os.path.basename(os.path.dirname(__file__))
 strew_path = os.path.dirname(__file__)
 
@@ -71,6 +73,10 @@ def selected_source(form):
 
     return source_name
 
+
+def selected_node():
+    node_name = bpy.context.scene.StrewBiomesNodes.NodesList
+    return node_name
 
 #####################################################################################
 #
