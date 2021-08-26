@@ -179,6 +179,21 @@ def add_category_node(biome, node_name, category_group):
         biome.links.new(biome.nodes["Strew_connect.12"].outputs[0], scatter_node.inputs["tree_input.12"])
         biome.links.new(biome.nodes["Strew_connect.13"].outputs[0], scatter_node.inputs["Use Existent TOPO"])
 
+        scatter_node.inputs[37].default_value = "WB_Path_DistEffector"
+        scatter_node.inputs[43].default_value = "WB_Effector_Scale"
+        scatter_node.inputs[49].default_value = "WB_Sharpness_Effector"
+        scatter_node.inputs[55].default_value = "WB_Cavity_Effector"
+        scatter_node.inputs[61].default_value = "WB_Slope_Effector"
+        scatter_node.inputs[67].default_value = "WB_Paint_Effector"
+        scatter_node.inputs[71].default_value = "WB_Effector_Density"
+        scatter_node.inputs[77].default_value = "WB_Sun_Effector"
+        scatter_node.inputs[83].default_value = "WB_River_DistEffector"  
+        scatter_node.inputs[90].default_value = "WB_Altitude"
+        scatter_node.inputs[98].default_value = "WB_Rocks_Effector"
+        scatter_node.inputs[104].default_value = "WB_Tree_Effector"
+
+
+
         biome.links.new(scatter_node.outputs[0], join_node.inputs[0])
 
         return scatter_node

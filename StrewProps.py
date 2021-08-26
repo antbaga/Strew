@@ -172,22 +172,6 @@ class LibraryList(PropertyGroup):
 #####################################################################################
 
 
-def enum_assets(self, context):
-    global asset_list_enum
-    global old_preset
-
-    current_preset = bpy.context.scene.StrewPresetDrop.StrewPresetDropdown
-
-    if current_preset == old_preset:        # if no preset is selected or not changed
-        return asset_list_enum              # it return empty list or previous list
-    else:
-        asset_list_enum.clear()             # clear the list
-
-        asset_list_enum = StrewFunctions.get_assets_enum(self, context, current_preset)     # get the assets list
-        old_preset = current_preset         # tell the preset has been changed
-        return asset_list_enum
-
-
 class PanelSwitch(bpy.types.PropertyGroup):
     MainView: bpy.props.EnumProperty(
         name="panels",
@@ -210,34 +194,6 @@ class PanelSwitch(bpy.types.PropertyGroup):
         ],
         default={"Settings"},
         options={"ENUM_FLAG"}
-    )
-
-
-nodes_list = StrewFunctions.nodes_list
-
-
-class BiomesNodes(PropertyGroup):
-
-    def get_biomes_nodes(self, context):
-        biome = StrewFunctions.selected_biome(context)
-        global nodes_list
-        nodes_list.append(("trees", "Trees", "trees"))
-        nodes_list.append(("grass", "Grass", "grass"))
-        nodes_list.append(("rocks", "Rocks", "rocks"))
-        imported_list = json.loads(bpy.data.texts[biome].as_string())
-        for category in imported_list:
-            nodes_list.append((f"{imported_list[category]['group']}_{category}",
-                               category,
-                               f"{imported_list[category]['group']}_{category}"))
-
-        return nodes_list
-
-    NodesList: EnumProperty(
-        name="Nodes list",
-        description="each node present in biome",
-        items=get_biomes_nodes,
-        options={"ENUM_FLAG"},
-        default=1
     )
 
 
@@ -416,7 +372,6 @@ classes = [
     # --- Panels ---
     BiomeNamesFields,
     PanelSwitch,
-    BiomesNodes,
     # --- Save Assets ---
     SaveAsset,
     EditAsset,
@@ -428,7 +383,6 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.Scene.biomes_names_fields = PointerProperty(type=BiomeNamesFields)
     bpy.types.Scene.StrewPanelSwitch = PointerProperty(type=PanelSwitch)
-    bpy.types.Scene.StrewBiomesNodes = PointerProperty(type=BiomesNodes)
     bpy.types.Scene.StrewPresetDrop = PointerProperty(type=StrewPresetProperty)
     bpy.types.Scene.StrewSourceDrop = PointerProperty(type=StrewSourceProperty)
     bpy.types.Scene.StrewImportedBiomes = PointerProperty(type=StrewImportedBiomes)
@@ -443,7 +397,6 @@ def unregister():
         bpy.utils.unregister_class(cls)
     del bpy.types.Scene.biomes_names_fields
     del bpy.types.Scene.StrewPanelSwitch
-    del bpy.types.Scene.StrewBiomesNodes
     del bpy.types.Scene.StrewPresetDrop
     del bpy.types.Scene.StrewSourceDrop
     del bpy.types.Scene.StrewSaveAsset
