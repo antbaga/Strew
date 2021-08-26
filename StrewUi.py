@@ -2,379 +2,257 @@ import bpy
 import os
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty
-from . import __init__, StrewManOperators, StrewBiomeManager
+from . import __init__, StrewManOperators, StrewBiomeFunctions, StrewProps, StrewFunctions
 import addon_utils
+import json
 
 
-StrewMasterCollection_name = 'Strew'
-StrewAssetsCollection_name = 'Strew_Assets'
-
-class MainPanel (bpy.types.Panel) :
-    bl_label = "Strew-Interface"
+class MainPanel(bpy.types.Panel):
+    bl_label = __name__
     bl_idname = "VIEW_3D_PT_STREW_Interface"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "STREW"
     bl_description = "STREW main panel"
-    
-    def draw(self, context) :
-        l = self.layout
-        r = l.row(align=True)
-        c = l.column(align=True)
-        #Calls the functions here
-        c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
-        c.operator("strew.createpreset", text="Save as new preset")
-        c.operator("strew.importassets", text="Import All")
-        c.operator("strew.addasset", text="Save as asset")
-        c.operator("strew.removeasset", text="remove from asset")
-        c.operator("strew.setupstrew", text="setup strew")
-        c.operator("strew.invokeprefspanel", text="open Asset Manager")
-        c.operator("strew.test", text="test")
+
+    def draw(self, context):
+        panel_switch = context.scene.StrewPanelSwitch
+        selected_biome = StrewFunctions.selected_biome(context)
+        imported_biomes = bpy.context.scene.get('Strew_Imported_Biomes')
+
+        lay = self.layout
+        r = lay.row(align=True)
+        c = r.column(align=True)
+
+        #####################################################################################
+        #       3D VIEW
+        #####################################################################################
+
+        if panel_switch.MainView == {'General'} and\
+                bpy.context.window.workspace.name != StrewFunctions.strew_compositor_workspace:
+
+            c.operator("strew.instance_prefs_panel", text="Strew Settings...")
+            c.separator(factor=2.0)
+
+            c.prop(context.scene.StrewPresetDrop, "StrewPresetDropdown")
+
+            #################################################################################
+            #       BIOME IMPORTATION
+            #################################################################################
+
+            if bpy.context.active_object is not None and bpy.context.active_object.type == 'MESH':
+                active_object = bpy.context.active_object
+
+                object_biome = active_object.get(StrewFunctions.terrain_property)
+                if object_biome is None:
+                    if imported_biomes is not None:
+                        if selected_biome in imported_biomes:
+                            c.operator("strew.assign_biome", text="Assign biome")
+                        else:
+                            c.operator("strew.import_biome", text="Import biome")
+                    else:
+                        c.operator("strew.import_biome", text="Import biome")
+
+                    # c.operator("strew.add_biome_popup", text="Create biome")
+                else:
+                    if object_biome != selected_biome:
+                        c.operator("strew.replace_biome", text="Replace biome")
+
+                if imported_biomes is not None:
+                    if selected_biome in imported_biomes:
+                        c.operator("strew.biome_compositor", text="Biome Compositor").switcher = 0
+                        c.separator(factor=2.0)
+
+                if object_biome is not None:
+                    c.label(text=str(object_biome))
+                    c.operator("strew.update_biome", text="Update biome")
+                    c.operator("strew.remove_biome", text="Remove biome")
 
 
-class InvokePrefsPanel(bpy.types.Operator):
-    bl_idname = "strew.invokeprefspanel"
-    bl_label = "InvokePrefsPanel"
+        #####################################################################################
+        #       BIOME COMPOSITOR
+        #####################################################################################
 
-    def modal(self, context, event):
-        mod = addon_utils.addons_fake_modules.get("Strew")
-        info = addon_utils.module_bl_info(mod)
-        if info["show_expanded"] == True:
-            self.cancel(context)
-            return {'CANCELLED'}
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
-            self.cancel(context)
-            return {'CANCELLED'}
-        if event.type == 'TIMER':
-            info["show_expanded"] = True
-        return {'PASS_THROUGH'}
+        elif panel_switch.MainView == {'Biomes'} or bpy.context.scene.name == StrewFunctions.strew_compositor_scene or\
+                bpy.context.window.workspace.name == StrewFunctions.strew_compositor_workspace:
 
-    def execute(self, context):
-        bpy.ops.screen.userpref_show("INVOKE_DEFAULT")
-        bpy.context.preferences.active_section = 'ADDONS'
-        bpy.data.window_managers["WinMan"].addon_search = "strew"
-        wm = context.window_manager
-        self._timer = wm.event_timer_add(0.1, window=context.window)
-        wm.modal_handler_add(self)
-        bpy.ops.scene.source_populate()
-        bpy.ops.scene.list_populate()
-        return {'RUNNING_MODAL'}
+            biome = StrewFunctions.selected_biome(context)
 
-    def cancel(self, context):
-        wm = context.window_manager
-        wm.event_timer_remove(self._timer)
+            imported_list = json.loads(bpy.data.texts[biome].as_string())
+
+            c = r.column(align=True)
+            c.scale_x = .5
+            c.scale_y = 2.0
+            c.operator("strew.switchcompopanel", text='grass').node = 'grass'
+            c.operator("strew.switchcompopanel", text='trees').node = 'trees'
+            c.operator("strew.switchcompopanel", text='rocks').node = 'rocks'
+            c.separator(factor=2.0)
+            for category in imported_list:
+                c.operator("strew.switchcompopanel", text=category).node = f"{imported_list[category]['group']}_{category}"
+
+            node = StrewFunctions.current_node
+            biome_tree = bpy.data.node_groups[biome].nodes[node].inputs
+            # c = r.column(align=True)
+            # c.scale_x = 0.30
+            # c.scale_y = 2.0
+            # c.prop(BiomesNodes, "NodesList")
+            r.separator(factor=2.0)
+            c = r.column(align=True)
+            c.prop(context.scene.StrewImportedBiomes, "ImportedBiomes")
+
+            c.operator("strew.biome_compositor", text="Exit Biome Compositor").switcher = 1
+
+            c.separator(factor=10.0)
+
+            c.label(text="GENERAL")
+            c.prop(biome_tree[2], "default_value", text="minimal distance")
+            c.prop(biome_tree[3], "default_value", text="density")
+            c.prop(biome_tree[4], "default_value", text="% particle displayed")
+            c.prop(biome_tree[5], "default_value", text="Scale")
+            c.prop(biome_tree[6], "default_value", text="Align Z")
+            c.separator(factor=3.0)
+            c.label(text="RANDOM")
+            c.prop(biome_tree[9], "default_value", text="Position")
+            c.prop(biome_tree[10], "default_value", text="Position Z")
+            c.prop(biome_tree[11], "default_value", text="Rotation")
+            c.prop(biome_tree[12], "default_value", text="Rotation Z")
+            c.prop(biome_tree[13], "default_value", text="scale")
+            c.prop(biome_tree[14], "default_value", text="Seed")
+            c.separator(factor=3.0)
+            c.label(text="VISIBILITY")
+            c.prop(biome_tree[17], "default_value", text="disable asset")
+            c.prop(biome_tree[18], "default_value", text="Disable in Viewport")
+            c.prop(biome_tree[19], "default_value", text="Use Proxy")
+            c.prop(biome_tree[20], "default_value", text="Proxy")
+            c.prop(biome_tree[21], "default_value", text="LOD0")
+            c.prop(biome_tree[22], "default_value", text="LOD1")
+            c.prop(biome_tree[23], "default_value", text="LOD2")
+            c.prop(biome_tree[24], "default_value", text="LOD3")
+            c.prop(biome_tree[25], "default_value", text="Use Collection")
+            c.prop(biome_tree[26], "default_value", text="Proxy")
+            c.prop(biome_tree[27], "default_value", text="LOD0")
+            c.prop(biome_tree[28], "default_value", text="LOD1")
+            c.prop(biome_tree[29], "default_value", text="LOD2")
+            c.prop(biome_tree[30], "default_value", text="LOD3")
+            c.prop(biome_tree[31], "default_value", text="Avoid from LOD 1")
+            c.prop(biome_tree[32], "default_value", text="Avoid from LOD 2")
+            c.prop(biome_tree[33], "default_value", text="Avoid from LOD 3")
+            c.separator(factor=5.0)
+            c.label(text="EFFECTORS")
+            c.label(text="Path :")
+            c.prop(biome_tree[38], "default_value", text="Intensity")
+            c.prop(biome_tree[39], "default_value", text="Offset")
+            c.prop(biome_tree[40], "default_value", text="Smooth")
+            c.prop(biome_tree[41], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Scale :")
+            c.prop(biome_tree[44], "default_value", text="Intensity")
+            c.prop(biome_tree[45], "default_value", text="Offset")
+            c.prop(biome_tree[46], "default_value", text="Smooth")
+            c.prop(biome_tree[47], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Shapness :")
+            c.prop(biome_tree[45], "default_value", text="Intensity")
+            c.prop(biome_tree[46], "default_value", text="Offset")
+            c.prop(biome_tree[47], "default_value", text="Smooth")
+            c.prop(biome_tree[48], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Cavity :")
+            c.prop(biome_tree[56], "default_value", text="Intensity")
+            c.prop(biome_tree[57], "default_value", text="Offset")
+            c.prop(biome_tree[58], "default_value", text="Smooth")
+            c.prop(biome_tree[59], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Slope :")
+            c.prop(biome_tree[62], "default_value", text="Intensity")
+            c.prop(biome_tree[63], "default_value", text="Offset")
+            c.prop(biome_tree[64], "default_value", text="Smooth")
+            c.prop(biome_tree[65], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Paint :")
+            c.prop(biome_tree[68], "default_value", text="Intensity")
+            c.prop(biome_tree[69], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Density :")
+            c.prop(biome_tree[72], "default_value", text="Intensity")
+            c.prop(biome_tree[73], "default_value", text="Offset")
+            c.prop(biome_tree[74], "default_value", text="Smooth")
+            c.prop(biome_tree[75], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Sun :")
+            c.prop(biome_tree[78], "default_value", text="Intensity")
+            c.prop(biome_tree[79], "default_value", text="Offset")
+            c.prop(biome_tree[80], "default_value", text="Smooth")
+            c.prop(biome_tree[81], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="River :")
+            c.prop(biome_tree[84], "default_value", text="Intensity")
+            c.prop(biome_tree[85], "default_value", text="Offset")
+            c.prop(biome_tree[86], "default_value", text="Smooth")
+            c.prop(biome_tree[87], "default_value", text="Avoid Water")
+            c.prop(biome_tree[88], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Altitude :")
+            c.prop(biome_tree[91], "default_value", text="Intensity")
+            c.prop(biome_tree[92], "default_value", text="Offset MIN")
+            c.prop(biome_tree[93], "default_value", text="Smooth MIN")
+            c.prop(biome_tree[94], "default_value", text="Offset MAX")
+            c.prop(biome_tree[95], "default_value", text="Smooth MAX")
+            c.prop(biome_tree[96], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Rock :")
+            c.prop(biome_tree[99], "default_value", text="Intensity")
+            c.prop(biome_tree[100], "default_value", text="Offset")
+            c.prop(biome_tree[101], "default_value", text="Smooth")
+            c.prop(biome_tree[102], "default_value", text="Avoid")
+            c.separator(factor=1.0)
+            c.label(text="Tree :")
+            c.prop(biome_tree[105], "default_value", text="Intensity")
+            c.prop(biome_tree[106], "default_value", text="Offset")
+            c.prop(biome_tree[107], "default_value", text="Smooth")
+            c.prop(biome_tree[108], "default_value", text="Avoid")
+            c.separator(factor=5.0)
+            c.label(text="CLUSTER :")
+            c.prop(biome_tree[112], "default_value", text="Avoid")
+            c.prop(biome_tree[113], "default_value", text="Cluster Type")
+            c.prop(biome_tree[114], "default_value", text="Cluster Scale")
+            c.prop(biome_tree[115], "default_value", text="Cluster Offset")
+            c.prop(biome_tree[116], "default_value", text="Cluster Smooth")
+            c.prop(biome_tree[117], "default_value", text="Cluster Smooth")
+            c.prop(biome_tree[118], "default_value", text="Cluster Invert")
 
 
-class testop(bpy.types.Operator):
-    bl_idname = "strew.test"
-    bl_label = "test"
-    def execute(self, context):
-        Assets = []
-        OriginalObject = bpy.context.selected_objects
-        Biome = context.scene.StrewPresetDrop.StrewPresetDropdown
-        StrewFolder = SetupFolders.getfilepath(self, context)
-        PresetFolder = str(StrewFolder) + "preset files\\"
-        AssetListPath = PresetFolder + context.scene.StrewPresetDrop.StrewPresetDropdown +'.txt'
-        with open(AssetListPath,'r') as AssetListFile:
-            AssetList=AssetListFile.readlines()
-            for Asset in AssetList:
-                Path = Asset.strip("\n").split(",")
-                if len(Path) == 3:
-                    Assets.append(f'{Path[1]}_{Path[2]}_LOD0')
-                elif len(Path) == 2:
-                    Assets.append(Path[1])
-        StrewBiomeManager.BiomeCreation.run(Biome, Assets, OriginalObject)
-        return {'FINISHED'}
 
-#####################################################################################
-#
-#       ADD/REMOVE ASSETS FROM PRESETS
-#           Operators
-#           Definitions       
-#
-#####################################################################################    
-#adds assets at the end of list in the file
-class StrewAddAsset(bpy.types.Operator):
-    bl_idname = "strew.addasset"
-    bl_label = "addasset"
-    #####
-    #####TODO: make a better check than just look for asset with same name
-    #####
-    def execute(self, context):
-        if bpy.data.filepath != "" :
-            #Do a Try except so if the preset file is not created or missing, it creates it.
-            try:
-                preset = context.scene.StrewPresetDrop.StrewPresetDropdown
-                basename = bpy.path.basename(bpy.data.filepath)
-                for obj in bpy.context.selected_objects:
-                    asset = basename + ',' + obj.name
-                    ManageAsset.AddAsset(self, context, preset, asset)
-                return {'FINISHED'}
-            except:
-                StrewCreatePreset.execute(self, context)
-                return {'FINISHED'}
-        else :
-            print("can't save as asset from temporary blend file yet. please save your file")
-            return {'FINISHED'}
+        #####################################################################################
+        #       ASSET CREATOR
+        #####################################################################################
 
-class StrewRemoveAsset(bpy.types.Operator):
-    bl_idname = "strew.removeasset"
-    bl_label = "removeasset"
-    
-    def execute(self, context):
-        preset = context.scene.StrewPresetDrop.StrewPresetDropdown
-        basename = bpy.path.basename(bpy.data.filepath)
-        
-        for obj in bpy.context.selected_objects:
-            asset = basename + ',' + obj.name
-            ManageAsset.RemoveAsset(self, context, preset, asset)
-        return {'FINISHED'}
+        #####################################################################################
+        #       FALLBACK
+        #####################################################################################
 
-
-#Registers the assets in a list in a file
-class StrewCreatePreset(bpy.types.Operator):
-    bl_idname = "strew.createpreset"
-    bl_label = "createpreset"
-    
-    def execute(self, context):
-        if bpy.data.filepath != "" :
-            AssetList =[]
-            preset = context.scene.StrewPresetDrop.StrewPresetDropdown
-            basename = bpy.path.basename(bpy.data.filepath)
-            for obj in bpy.context.selected_objects:
-                asset = basename + ',' + obj.name
-                AssetList.append(asset+'\n')
-            ManageAsset.CreateNew(self, context, preset, AssetList)
-            return {'FINISHED'}
-        else :
-            print("can't save as asset from temporary blend file yet. please save your file")
-            return {'FINISHED'}
-        
-
-class ManageAsset():
-    #This is where the assets are written or erased from the textfiles.
-    def AddAsset(self, context, preset, asset):
-        StrewFolder = SetupFolders.getfilepath(self, context)
-        AssetListPath = f'{StrewFolder}preset files\\{preset}.txt'
-        AssetList=open(AssetListPath,'r').readlines()
-        AssetList.append(asset+'\n')
-        with open(AssetListPath,'w') as AssetListFile:
-            for asset in AssetList:
-                AssetListFile.write(asset)
-        return {'FINISHED'}
-    def RemoveAsset(self, context, preset, asset):
-        StrewFolder = SetupFolders.getfilepath(self, context)
-        AssetListPath = f'{StrewFolder}preset files\\{preset}.txt'
-        AssetList=open(AssetListPath,'r').readlines()
-        AssetList.remove(asset+'\n')
-        with open(AssetListPath,'w') as AssetListFile:
-            for asset in AssetList:
-                AssetListFile.write(asset)
-        return {'FINISHED'}
-    def RemoveAssetIndex(self, context, preset, index):
-        StrewFolder = SetupFolders.getfilepath(self, context)
-        AssetListPath = f'{StrewFolder}preset files\\{preset}.txt'
-        AssetList=open(AssetListPath,'r').readlines()
-        del AssetList[index]
-        with open(AssetListPath,'w') as AssetListFile:
-            for asset in AssetList:
-                AssetListFile.write(asset)
-        return {'FINISHED'}
-    def CreateNew(self, context, preset, AssetList):
-        #gotta find a way to create new files, and new lines with new names without causing problems
-        #because for the moment, all the presets are already defined manualy with text file
-        #in fact, I just have to ask user what name he wants his preset to have, and write it to presets.txt.
-        StrewFolder = SetupFolders.getfilepath(self, context)
-        #This is in this line that the name will be defined
-        AssetListPath = f'{StrewFolder}preset files\\{preset}.txt'
-        with open(AssetListPath,'w') as AssetListFile:
-            for asset in AssetList:
-                AssetListFile.write(asset)
-        return {'FINISHED'}
-        
-            
-#####################################################################################
-#
-#       IMPORT ASSETS
-#           Operators
-#           Definitions       
-#
-#####################################################################################  
-
-#Reads the assets from a list in a file
-class StrewImportAssets(bpy.types.Operator):
-    bl_idname = "strew.importassets"
-    bl_label = "importassets"
-    def execute(self, context):
-        #setups the collection system where the assets will be stored.
-        SAC = SetupStrew.SetupCollections(self)
-        StrewFolder = SetupFolders.getfilepath(self, context)
-        BlendFolder = str(StrewFolder) + "blend files\\"
-        PresetFolder = str(StrewFolder) + "preset files\\"
-        #read the file line by line, converting each of them as list
-        AssetListPath = PresetFolder + context.scene.StrewPresetDrop.StrewPresetDropdown +'.txt'
-        with open(AssetListPath,'r') as AssetListFile:
-            AssetList=AssetListFile.readlines()
-            #strips the lines of the file as a Path, and an Object Name.
-            #are all the assets going to be in OBJECT inner path? gotta change it eventualy.
-            for Asset in AssetList:
-                Path = Asset.strip("\n").split(",")
-                #actually imports the assets listed in the file.
-                if len(Path) == 2:
-                    Import.CustomAsset(BlendFolder + Path[0], Path[1].strip(), SAC)
-                ###  Difference between 2 and 3, is if the asset comoes from us, it will be in a collection. custom assets are not.
-                elif len(Path) == 3:
-                    Import.Collection(BlendFolder + Path[0],Path[1], Path[2], SAC)
-            
-        #Is THIS realy neccessary?? apparenly yes
-        return {'FINISHED'}
-    #Pretty self explanatory... right?
-    
-class Import():
-    def CustomAsset(AssetPath, AssetName, SAC): 
-        if AssetName in bpy.data.collections[SAC.name].all_objects:
-            return {'FINISHED'}
-            #I Should inform the user that an object with same name already exists
         else:
-
-            if "Strew_Custom_Assets" not in bpy.data.collections[SAC.name].children:
-                StrewCustomCollection = bpy.data.collections.new("Strew_Custom_Assets")
-                StrewAssetsCollection = bpy.data.collections[StrewAssetsCollection_name]
-                StrewAssetsCollection.children.link(StrewCustomCollection)
-                
-            Import.SetActiveCollection(bpy.context.view_layer.layer_collection, "Strew_Custom_Assets")
-            print(bpy.context.view_layer.active_layer_collection.name) 
-            print(AssetName)                       
-            bpy.ops.wm.append(
-                filepath=os.path.join(AssetPath+"\\Object\\"+AssetName),
-                directory=os.path.join(AssetPath+"\\Object\\"),
-                filename=AssetName
-                #autoselect = True,
-                #active_collection = True
-                )
-            
-            #obj_object = bpy.context.selected_objects[0]
-            #bpy.ops.collection.objects_remove_all()
-            #SAC.objects.link(obj_object)
-        
-    def Collection(CollPath, CollParent, CollName, SAC):
-        ##Ensures the parent collection (specie) exists in the file, and is active
-        if CollParent not in bpy.data.collections[SAC.name].children:
-            StrewAssetsCollection = bpy.data.collections[StrewAssetsCollection_name]
-            StrewSpecieCollection = bpy.data.collections.new(CollParent)
-            StrewAssetsCollection.children.link(StrewSpecieCollection)
-        Import.SetActiveCollection(bpy.context.view_layer.layer_collection, CollParent)
-
-            
-        if CollName in bpy.data.collections[CollParent].children:
-            print("collection already exists")
-        else:
-            print(bpy.context.view_layer.active_layer_collection.name)
-            print(CollName)
-            bpy.ops.wm.append(
-                filepath=os.path.join(CollPath+"\\Collection\\"+CollName),
-                directory=os.path.join(CollPath+"\\Collection\\"),
-                filename=CollName
-                #autoselect = True,
-                #active_collection = True
-                )
-                #print(f"can't import Collection {AssetName} from {AssetPath}")
-
-     
-    def SetActiveCollection(collection, tofind):
-        for c in collection.children:
-            if c.name == tofind:
-                bpy.context.view_layer.active_layer_collection = c
-                #print("found it")
-            elif len(c.children):
-                Import.SetActiveCollection(c, tofind)
-            else:
-                #print(f'not in {c.name}')
-                pass
-#####################################################################################
-#
-#       SETUP STREW       
-#
-#####################################################################################  
-
-class SetupFolders(bpy.types.Operator):
-    #TODO: MAKE IT CREATE/IMPORT THE TEXT FILES AS WELL
-    bl_idname = "strew.setupfolder"
-    bl_label = "setupfolder"
-    filepath = ""
-    def execute(self, context):
-        try:
-            try:
-                preferences = context.preferences
-                addon_prefs = preferences.addons["Strew"].preferences
-                filepath = addon_prefs.filepath
-            except:
-                print("couldn't get strew path")
-                os.mkdir(filepath)
-                return filepath+"\\"
-            return filepath+"\\"
-        except:
-            print("couldn't create strew folders. maybe it already exists.")
-            return filepath
-    def getfilepath(self, context):
-        preferences = context.preferences
-        addon_prefs = preferences.addons["Strew"].preferences
-        filepath = addon_prefs.filepath
-        if filepath.endswith("\\"):
-            return filepath
-        else:
-            return filepath+"\\"
-    
-
-class SetupStrew(bpy.types.Operator):
-    bl_idname = "strew.setupstrew"
-    bl_label = "setupstrew"
-    def execute(self, context):
-        self.SetupCollections()
-        SetupFolders.execute(self, context)
-        return {'FINISHED'}
-    def SetupCollections(self):
-        #Checks if Strew Master Collection exists, otherwise, creates it.
-        try:
-           StrewMasterCollection = bpy.data.collections[StrewMasterCollection_name]
-        except:
-           StrewMasterCollection = bpy.data.collections.new(StrewMasterCollection_name)
-           bpy.context.scene.collection.children.link(StrewMasterCollection)
-           
-        #Checks if Strew Assets Collection exists, otherwise, creates it.
-        try:
-           StrewAssetsCollection = bpy.data.collections[StrewAssetsCollection_name]
-        except:
-            StrewAssetsCollection = bpy.data.collections.new(StrewAssetsCollection_name)
-            StrewMasterCollection.children.link(StrewAssetsCollection)
-        #Gives pack the AssetCollection as a var usable externaly.
-        return StrewAssetsCollection
-        #Pretty sure that now THIS is not neccessary.
-        return {'FINISHED'}
-
+            c.operator("strew.setup_strew", text="setup strew")
+            c.operator("strew.instance_prefs_panel", text="open Asset Manager")
 
 
 #####################################################################################
 #
-#       REGISTER TO THE REGISTRE BECAUSE IF NOT, BLENDER DON'T KNOW JOHN SNOOOOOW       
+#       REGISTER AND UNREGISTER
 #
-#####################################################################################   
-    
-classes=  [
-MainPanel,
-StrewImportAssets,
-StrewCreatePreset,
-StrewAddAsset,
-StrewRemoveAsset,
-SetupFolders,
-SetupStrew,
-InvokePrefsPanel,
-testop,
+#####################################################################################
+
+
+classes = [
+    MainPanel,
 ]
 
-def register() :
+
+def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-def unregister() :
+
+
+def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)

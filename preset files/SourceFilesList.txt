@@ -1,3 +1,0 @@
-This_file,This file,This file
-Rocks,Rocks,Rocks file
-Plants,Plants,Plants file

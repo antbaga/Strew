@@ -1,0 +1,75 @@
+{
+    "%STREW%This_file": [
+        {
+            "name": "This file",
+            "identifier": "%STREW%This_file",
+            "description": "All objects present in this file.",
+            "assets": []
+        }
+    ],
+    "%STREW%rocks": [
+        {
+            "name": "rocks",
+            "identifier": "%STREW%rocks",
+            "description": "All things that are minerals.",
+            "assets": [
+                {
+                    "file": "%STREW%rocks.blend",
+                    "name": "Variante 2",
+                    "type": "Collection",
+                    "description": "even less beautiful cube",
+                    "category": "Large rocks",
+                    "group": "rocks",
+                    "objects": {
+                        "LOD_0": "Espece 1_Variante 2_LOD0",
+                        "LOD_1": "Espece 1_Variante 2_LOD0",
+                        "LOD_2": "Espece 1_Variante 2_LOD0",
+                        "LOD_3": "Espece 1_Variante 2_LOD0",
+                        "PROXY": "Espece 1_Variante 2_LOD0"
+                    }
+                },
+                {
+                    "file": "%STREW%rocks.blend",
+                    "name": "Variante 1",
+                    "type": "Collection",
+                    "description": "less beautiful cube",
+                    "category": "rocks",
+                    "group": "rocks",
+                    "objects": {
+                        "LOD_0": "Espece 1_Variante 1_LOD0",
+                        "LOD_1": "Espece 1_Variante 1_LOD0",
+                        "LOD_2": "Espece 1_Variante 1_LOD0",
+                        "LOD_3": "Espece 1_Variante 1_LOD0",
+                        "PROXY": "Espece 1_Variante 1_LOD0"
+                    }
+                }
+            ]
+        }
+    ],
+    "%STREW%plants": [
+        {
+            "name": "plants",
+            "identifier": "%STREW%plants",
+            "description": "All things that are vegetables.",
+            "assets": [
+                {
+                    "file": "%STREW%plants.blend",
+                    "name": "Basilic",
+                    "type": "Object",
+                    "description": "Beautiful basilic",
+                    "category": "grass",
+                    "group": "grass",
+                    "objects": {}
+                }
+            ]
+        }
+    ],
+    "New Library": [
+        {
+            "name": "New Library",
+            "identifier": "New Library",
+            "description": "Description of New library",
+            "assets": []
+        }
+    ]
+}
