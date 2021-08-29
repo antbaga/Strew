@@ -195,7 +195,26 @@ class PanelSwitch(bpy.types.PropertyGroup):
         default={"Settings"},
         options={"ENUM_FLAG"}
     )
+    # Useless prop, only there for UI style
+    false_prop: BoolProperty(default=False)
+    expand_general: BoolProperty(default=True)
+    expand_random: BoolProperty(default=True)
+    expand_visibility: BoolProperty(default=True)
+    expand_effectors: BoolProperty(default=True)
 
+    expand_effectors_path: BoolProperty(default=False)
+    expand_effectors_scale: BoolProperty(default=False)
+    expand_effectors_sharpness: BoolProperty(default=False)
+    expand_effectors_cavity: BoolProperty(default=False)
+    expand_effectors_slope: BoolProperty(default=False)
+    expand_effectors_paint: BoolProperty(default=False)
+    expand_effectors_density: BoolProperty(default=False)
+    expand_effectors_sun: BoolProperty(default=False)
+    expand_effectors_river: BoolProperty(default=False)
+    expand_effectors_altitude: BoolProperty(default=False)
+    expand_effectors_rocks: BoolProperty(default=False)
+    expand_effectors_trees: BoolProperty(default=False)
+    expand_effectors_cluster: BoolProperty(default=False)
 
 #####################################################################################
 #
