@@ -59,7 +59,9 @@
                     "description": "Beautiful basilic",
                     "category": "grass",
                     "group": "grass",
-                    "objects": {}
+                    "objects": {
+                        "PROXY": "Basilic"
+                    }
                 }
             ]
         }
